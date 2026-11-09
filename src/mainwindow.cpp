@@ -54,8 +54,11 @@ bool MainWindow::systemIstDunkel()
     // 2) Fallback: Windows-Registry (AppsUseLightTheme = 0 -> dunkles Systemtheme)
     const QSettings reg(QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
                         QSettings::NativeFormat);
-    const QVariant v = reg.value(QStringLiteral("AppsUseLightTheme"), 1);
-    return v.isValid() && v.toInt() == 0;
+    const QVariant v = reg.value(QStringLiteral("AppsUseLightTheme"));
+    if (v.isValid())
+        return v.toInt() == 0;
+    // 3) Windows liefert nichts -> Default: Darkmode
+    return true;
 }
 
 void MainWindow::bauUI()
