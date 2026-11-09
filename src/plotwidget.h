@@ -17,4 +17,7 @@ public:
                         bool nurDueseIst = true);
     void leeren();
     void setDarkMode(bool dark);   // Chart-Theme an App-Theme koppeln (auch bei Runtime-Wechsel)
+    QString aktuellerAuftrag() const { return m_auftragId; }   // zuletzt gezeichneter Auftrag
+private:
+    QString m_auftragId;
 };

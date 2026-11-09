@@ -9,7 +9,8 @@ PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
 {
     chart()->setAnimationOptions(QChart::NoAnimation);
     chart()->legend()->setVisible(true);
-    chart()->setTitle(tr("Temperaturverlauf"));
+    chart()->legend()->setAlignment(Qt::AlignBottom | Qt::AlignLeft);   // Legende unten links
+    chart()->setTitle(QString());   // keine Überschrift
     // Chart-Theme folgt dem App-Theme (hell/dunkel)
     setDarkMode(qApp->palette().color(QPalette::Window).lightness() < 128);
     setRenderHint(QPainter::Antialiasing);
@@ -23,13 +24,14 @@ void PlotWidget::setDarkMode(bool dark)
 void PlotWidget::leeren()
 {
     chart()->removeAllSeries();
-    chart()->setTitle(tr("Kein Protokoll ausgewählt"));
+    m_auftragId.clear();
 }
 
 void PlotWidget::zeigeProtokoll(const Protokoll &p)
 {
     chart()->removeAllSeries();
-    chart()->setTitle(tr("Temperaturverlauf Auftrag %1").arg(p.auftragId));
+    chart()->setTitle(QString());   // keine Überschrift
+    m_auftragId = p.auftragId;
 
     auto mk = [](const QString &name, const QColor &c) {
         auto *s = new QLineSeries();
@@ -87,7 +89,7 @@ void PlotWidget::zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> 
                                 bool nurDueseIst)
 {
     chart()->removeAllSeries();
-    chart()->setTitle(tr("Vergleich Sprungantworten"));
+    chart()->setTitle(QString());
     static const QColor farben[] = {Qt::red, Qt::blue, Qt::green, Qt::magenta, Qt::darkCyan,
                                     Qt::darkYellow, Qt::darkGreen, Qt::darkBlue};
     int i = 0;

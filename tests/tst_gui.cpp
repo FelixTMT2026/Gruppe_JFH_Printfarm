@@ -575,13 +575,13 @@ void TestGui::singleClickAktualisiertProtokoll()
     QVERIFY(z1 >= 0 && z2 >= 0);
     emit view->clicked(model->index(z1, 0));
     QTest::qWait(30);
-    const QString t1 = plot->chart()->title();
-    QVERIFY(t1.contains(model->auftragAt(z1)->auftragId));
+    QCOMPARE(plot->aktuellerAuftrag(), model->auftragAt(z1)->auftragId);
+    QVERIFY(plot->chart()->title().isEmpty());   // keine Überschrift
+    QCOMPARE(plot->chart()->legend()->alignment(), Qt::AlignBottom | Qt::AlignLeft);   // Legende unten links
     emit view->clicked(model->index(z2, 0));   // Single-Click auf neuen Job
     QTest::qWait(30);
-    const QString t2 = plot->chart()->title();
-    QVERIFY(t2.contains(model->auftragAt(z2)->auftragId));
-    QVERIFY(t1 != t2);
+    QCOMPARE(plot->aktuellerAuftrag(), model->auftragAt(z2)->auftragId);
+    QVERIFY(plot->aktuellerAuftrag() != model->auftragAt(z1)->auftragId);
 }
 
 QTEST_MAIN(TestGui)
