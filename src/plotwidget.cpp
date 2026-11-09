@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QPalette>
 #include <QCheckBox>
+#include <QCategoryAxis>
 #include <climits>
 
 PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
@@ -133,35 +134,87 @@ void PlotWidget::render()
         s->setColor(c);
         return s;
     };
-    // adaptiv für die visuelle Skalierung: Schwelle = aktuelle Plot-Breite (~1 Punkt/Pixel);
-    // im Standard-Modus (Toggle aus) werden alle Punkte gezeichnet
+    // X-Warping: im adaptiven Modus wird die Zeitachse anhand der lokalen
+    // Temperaturänderung gestreckt (Sprünge/Änderungen breiter, gerade Linien
+    // kürzer); im Standard-Modus bleibt die Zeit linear.
+    const int n = m_duesePts.size();
+    QVector<double> dispX(n);
+    if (m_adaptiv && n > 2) {
+        QVector<double> imp(n, 1e-3);
+        double maxImp = 1e-9;
+        for (int i = 1; i < n; ++i) {
+            imp[i] = qAbs(m_duesePts[i].y() - m_duesePts[i - 1].y()) + 1e-3;
+            maxImp = qMax(maxImp, imp[i]);
+        }
+        dispX[0] = m_duesePts[0].x();
+        for (int i = 1; i < n; ++i) {
+            const double dx = m_duesePts[i].x() - m_duesePts[i - 1].x();
+            dispX[i] = dispX[i - 1] + dx * (1.0 + 9.0 * imp[i] / maxImp);   // bis 10x gestreckt
+        }
+    } else {
+        for (int i = 0; i < n; ++i)
+            dispX[i] = m_duesePts[i].x();
+    }
+    // Anzeige-Punkte (display-x, y) bilden und decimieren
+    QVector<QPointF> dueseDisp, bettDisp;
+    for (int i = 0; i < n; ++i) {
+        dueseDisp.append({dispX[i], m_duesePts[i].y()});
+        bettDisp.append({dispX[i], m_bettPts[i].y()});
+    }
     const int schwelle = m_adaptiv ? qMax(200, width()) : INT_MAX;
     auto *sDuese = mk(tr("Düsentemperatur"), QColor(214, 69, 49));
     auto *sBett = mk(tr("Betttemperatur"), QColor(41, 128, 185));
-    for (const auto &pt : lttb(m_duesePts, schwelle))
+    for (const auto &pt : lttb(dueseDisp, schwelle))
         sDuese->append(pt);
-    for (const auto &pt : lttb(m_bettPts, schwelle))
+    for (const auto &pt : lttb(bettDisp, schwelle))
         sBett->append(pt);
+    // Ereignisse auf die verzerrte Zeitachse mappen (lineare Interpolation)
     for (const auto &ev : m_events) {
+        double xd = ev.first;
+        if (m_adaptiv && n > 1) {
+            for (int i = 1; i < n; ++i) {
+                if (m_duesePts[i].x() >= ev.first) {
+                    const double f = (ev.first - m_duesePts[i - 1].x()) /
+                                     qMax(1e-9, m_duesePts[i].x() - m_duesePts[i - 1].x());
+                    xd = dispX[i - 1] + f * (dispX[i] - dispX[i - 1]);
+                    break;
+                }
+            }
+        }
         auto *s = mk(ev.second, Qt::gray);
-        s->append(ev.first, 0);
-        s->append(ev.first, m_maxTemp);
+        s->append(xd, 0);
+        s->append(xd, m_maxTemp);
         s->setPen(QPen(Qt::gray, 0, Qt::DashLine));
         chart()->addSeries(s);
     }
     chart()->addSeries(sDuese);
     chart()->addSeries(sBett);
 
-    chart()->createDefaultAxes();
-    auto *ax = qobject_cast<QValueAxis*>(chart()->axes(Qt::Horizontal).first());
-    if (ax) {
-        ax->setTitleText(tr("Zeit [min]"));
-        ax->setLabelFormat(QStringLiteral("%.0f"));   // nur ganze Zahlen auf der Achse
+    // Achsen neu aufbauen: X als Kategorieachse, damit die Beschriftung die echte
+    // Zeit (min) an den verzerrten Positionen zeigt; Y ganzzahlig.
+    const auto oldAxes = chart()->axes();
+    for (auto *a : oldAxes) { chart()->removeAxis(a); delete a; }
+    auto *cat = new QCategoryAxis();
+    cat->setTitleText(tr("Zeit [min]"));
+    const double xMin = dispX.first(), xMax = dispX.last();
+    cat->setRange(xMin, qMax(xMax, xMin + 1e-9));
+    const int ticks = 6;
+    for (int t = 0; t <= ticks; ++t) {
+        const double pos = xMin + (xMax - xMin) * t / ticks;
+        // echte Zeit an dieser Anzeige-Position finden
+        double realMin = m_duesePts.last().x();
+        for (int i = 0; i < n; ++i)
+            if (dispX[i] >= pos) { realMin = m_duesePts[i].x(); break; }
+        cat->append(QString::number(qRound64(realMin)), pos);
     }
-    auto *ay = qobject_cast<QValueAxis*>(chart()->axes(Qt::Vertical).first());
-    if (ay) {
-        ay->setTitleText(tr("Temperatur [°C]"));
-        ay->setLabelFormat(QStringLiteral("%.0f"));   // nur ganze Zahlen auf der Achse
+    chart()->addAxis(cat, Qt::AlignBottom);
+    auto *ay = new QValueAxis();
+    ay->setTitleText(tr("Temperatur [°C]"));
+    ay->setLabelFormat(QStringLiteral("%.0f"));
+    chart()->addAxis(ay, Qt::AlignLeft);
+    for (auto *s : chart()->series()) {
+        s->attachAxis(cat);
+        s->attachAxis(ay);
     }
 }
 

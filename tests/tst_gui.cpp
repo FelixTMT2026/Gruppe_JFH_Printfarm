@@ -25,6 +25,7 @@
 #include <QStyledItemDelegate>
 #include <QLineSeries>
 #include <QCheckBox>
+#include <QCategoryAxis>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -422,11 +423,11 @@ void TestGui::protokollOhneAnmeldungSichtbar()
     emit view->doubleClicked(model->index(ziel2, 0));
     QTest::qWait(50);
     QVERIFY(!plot->chart()->series().isEmpty());
-    // Zeitachse in Minuten, nur ganze Zahlen als Achsenbeschriftung
-    auto *ax = qobject_cast<QValueAxis*>(plot->chart()->axes(Qt::Horizontal).first());
+    // Zeitachse in Minuten (Kategorieachse mit echten Minuten-Labels), Y ganzzahlig
+    auto *ax = plot->chart()->axes(Qt::Horizontal).first();
     QVERIFY(ax);
     QVERIFY(ax->titleText().contains(QStringLiteral("min")));
-    QCOMPARE(ax->labelFormat(), QStringLiteral("%.0f"));
+    QVERIFY(qobject_cast<QCategoryAxis*>(ax) != nullptr);
     auto *ay = qobject_cast<QValueAxis*>(plot->chart()->axes(Qt::Vertical).first());
     QVERIFY(ay);
     QCOMPARE(ay->labelFormat(), QStringLiteral("%.0f"));
@@ -684,6 +685,16 @@ void TestGui::adaptivToggle()
     box->setChecked(true);                // zurück zu adaptiv
     QTest::qWait(20);
     QCOMPARE(count(), adaptiv);
+    // adaptiv verzerrt die Zeitachse: Anzeige-Spanne gestreckt ggü. linearer Zeit
+    auto lastX = [&]() {
+        const auto *s = static_cast<QLineSeries*>(plot.chart()->series().first());
+        return s->points().last().x();
+    };
+    const double xAdaptiv = lastX();
+    box->setChecked(false);
+    QTest::qWait(20);
+    const double xStandard = lastX();
+    QVERIFY(xAdaptiv > xStandard);   // adaptive Achse ist gestreckt (Änderungen breiter)
 }
 
 QTEST_MAIN(TestGui)
