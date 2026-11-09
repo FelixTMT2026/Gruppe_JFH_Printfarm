@@ -128,9 +128,9 @@ void MainWindow::menuesErzeugen()
 
 bool MainWindow::ladeDatenordner(const QString &folder)
 {
+    m_loader->loadIndex(folder);   // Index ZUERST, sonst ist er beim datenGeladen-Signal noch leer
     if (!m_store->loadFromFolder(folder))
         return false;
-    m_loader->loadIndex(folder);
     statusBar()->showMessage(tr("Daten geladen aus %1 (%2 Drucker, %3 Aufträge)")
         .arg(folder).arg(m_store->drucker().size()).arg(m_store->auftraege().size()));
     return true;

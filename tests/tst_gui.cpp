@@ -16,6 +16,7 @@
 #include "plotwidget.h"
 #include "ganttwidget.h"
 #include "analyse.h"
+#include "auth.h"
 #include <QLabel>
 #include <QChart>
 
@@ -40,6 +41,7 @@ private slots:
     void themeFarbenBeiderModi();
     void tabBleibtNachUiNeuaufbauErhalten();
     void sortierungMitDuplikatenCrashfrei();
+    void protokollOhneAnmeldungSichtbar();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -365,6 +367,43 @@ void TestGui::teileInitialSortiertUndAusgewaehlt()
     QVERIFY(a);
     QVERIFY(a->ergebnis != QLatin1String("ausstehend"));
     QVERIFY(a->ende.isValid());   // letzter beendeter Druck
+}
+
+void TestGui::protokollOhneAnmeldungSichtbar()
+{
+    // explizit NICHT angemeldet
+    Auth::logout();
+    QCOMPARE(Auth::rolle(), Auth::Keine);
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab1 = tabs->widget(1);
+    // im Teile-Tab: Doppelklick auf einen fertigen Auftrag -> Plot muss Serien haben (ohne Login)
+    auto *view = tab1->findChild<QTableView*>();
+    auto *plot = tab1->findChild<PlotWidget*>();
+    QVERIFY(plot);
+    auto *model = static_cast<AuftragModel*>(view->model());
+    int ziel = -1;
+    for (int i = 0; i < model->rowCount(); ++i) {
+        const auto *a = model->auftragAt(i);
+        if (a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+            ziel = i; break;
+        }
+    }
+    QVERIFY(ziel >= 0);
+    emit view->doubleClicked(model->index(ziel, 0));
+    QTest::qWait(50);
+    QVERIFY(!plot->chart()->series().isEmpty());   // Protokoll gezeichnet, ohne Anmeldung
+    // nochmal einen anderen fertigen Auftrag anklicken
+    int ziel2 = -1;
+    for (int i = 0; i < model->rowCount(); ++i) {
+        const auto *a = model->auftragAt(i);
+        if (i != ziel && a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+            ziel2 = i; break;
+        }
+    }
+    QVERIFY(ziel2 >= 0);
+    emit view->doubleClicked(model->index(ziel2, 0));
+    QTest::qWait(50);
+    QVERIFY(!plot->chart()->series().isEmpty());
 }
 
 QTEST_MAIN(TestGui)
