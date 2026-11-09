@@ -418,10 +418,14 @@ void TestGui::protokollOhneAnmeldungSichtbar()
     emit view->doubleClicked(model->index(ziel2, 0));
     QTest::qWait(50);
     QVERIFY(!plot->chart()->series().isEmpty());
-    // Zeitachse in Minuten
+    // Zeitachse in Minuten, nur ganze Zahlen als Achsenbeschriftung
     auto *ax = qobject_cast<QValueAxis*>(plot->chart()->axes(Qt::Horizontal).first());
     QVERIFY(ax);
     QVERIFY(ax->titleText().contains(QStringLiteral("min")));
+    QCOMPARE(ax->labelFormat(), QStringLiteral("%.0f"));
+    auto *ay = qobject_cast<QValueAxis*>(plot->chart()->axes(Qt::Vertical).first());
+    QVERIFY(ay);
+    QCOMPARE(ay->labelFormat(), QStringLiteral("%.0f"));
 }
 
 void TestGui::belegungsplanNurFuerAdmin()

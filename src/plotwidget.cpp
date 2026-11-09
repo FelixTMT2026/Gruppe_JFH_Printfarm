@@ -72,9 +72,15 @@ void PlotWidget::zeigeProtokoll(const Protokoll &p)
 
     chart()->createDefaultAxes();
     auto *ax = qobject_cast<QValueAxis*>(chart()->axes(Qt::Horizontal).first());
-    if (ax) ax->setTitleText(tr("Zeit [min]"));
+    if (ax) {
+        ax->setTitleText(tr("Zeit [min]"));
+        ax->setLabelFormat(QStringLiteral("%.0f"));   // nur ganze Zahlen auf der Achse
+    }
     auto *ay = qobject_cast<QValueAxis*>(chart()->axes(Qt::Vertical).first());
-    if (ay) ay->setTitleText(tr("Temperatur [°C]"));
+    if (ay) {
+        ay->setTitleText(tr("Temperatur [°C]"));
+        ay->setLabelFormat(QStringLiteral("%.0f"));   // nur ganze Zahlen auf der Achse
+    }
 }
 
 void PlotWidget::zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> &kurven,
@@ -95,7 +101,13 @@ void PlotWidget::zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> 
     }
     chart()->createDefaultAxes();
     auto *ax = qobject_cast<QValueAxis*>(chart()->axes(Qt::Horizontal).first());
-    if (ax) ax->setTitleText(tr("Zeit [min]"));
+    if (ax) {
+        ax->setTitleText(tr("Zeit [min]"));
+        ax->setLabelFormat(QStringLiteral("%.0f"));
+    }
     auto *ay = qobject_cast<QValueAxis*>(chart()->axes(Qt::Vertical).first());
-    if (ay) ay->setTitleText(tr("Temperatur [°C]"));
+    if (ay) {
+        ay->setTitleText(tr("Temperatur [°C]"));
+        ay->setLabelFormat(QStringLiteral("%.0f"));
+    }
 }
