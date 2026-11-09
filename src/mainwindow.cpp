@@ -19,6 +19,9 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QSettings>
+#include <QGuiApplication>
+#include <QStyleHints>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -29,12 +32,30 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_store = new DataStore(this);
     m_loader = new ProtocolLoader(this);
 
+    // System-Default: Windows-Theme (hell/dunkel) übernehmen
+    m_dark = systemIstDunkel();
+
     m_status = new QLabel(this);
     statusBar()->addPermanentWidget(m_status);
     statusBar()->showMessage(tr("Bereit"));
 
+    applyTheme();   // vor dem UI-Aufbau, damit z. B. Charts das richtige Theme sehen
     bauUI();
-    applyTheme();
+}
+
+bool MainWindow::systemIstDunkel()
+{
+    // 1) Qt-Color-Scheme (Windows 11 / Qt 6.5+)
+    const Qt::ColorScheme scheme = QGuiApplication::styleHints()->colorScheme();
+    if (scheme == Qt::ColorScheme::Dark)
+        return true;
+    if (scheme == Qt::ColorScheme::Light)
+        return false;
+    // 2) Fallback: Windows-Registry (AppsUseLightTheme = 0 -> dunkles Systemtheme)
+    const QSettings reg(QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
+                        QSettings::NativeFormat);
+    const QVariant v = reg.value(QStringLiteral("AppsUseLightTheme"), 1);
+    return v.isValid() && v.toInt() == 0;
 }
 
 void MainWindow::bauUI()
