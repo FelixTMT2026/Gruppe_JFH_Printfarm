@@ -28,9 +28,6 @@ private:
     class PlotWidget *m_plot;
     class QLabel *m_info;
     class QLabel *m_kosten;
-    class QTableView *m_ganttView;
-    class AuftragModel *m_ganttModel;
-    class GanttWidget *m_ganttPlot;
+    class QPushButton *m_planBtn;
     QString m_aktuellerAuftrag;
-    QList<Planung::Zuweisung> m_letztePlanung;
 };

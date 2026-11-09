@@ -19,6 +19,7 @@
 #include "auth.h"
 #include <QLabel>
 #include <QChart>
+#include <QPushButton>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -42,6 +43,7 @@ private slots:
     void tabBleibtNachUiNeuaufbauErhalten();
     void sortierungMitDuplikatenCrashfrei();
     void protokollOhneAnmeldungSichtbar();
+    void belegungsplanNurFuerAdmin();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -404,6 +406,22 @@ void TestGui::protokollOhneAnmeldungSichtbar()
     emit view->doubleClicked(model->index(ziel2, 0));
     QTest::qWait(50);
     QVERIFY(!plot->chart()->series().isEmpty());
+}
+
+void TestGui::belegungsplanNurFuerAdmin()
+{
+    // abgemeldet: Belegungsplan-Button im Teile-Tab nicht sichtbar
+    Auth::logout();
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab1 = tabs->widget(1);
+    const auto buttons = tab1->findChildren<QPushButton*>();
+    QVERIFY(!buttons.isEmpty());
+    for (auto *b : buttons)
+        QVERIFY(!b->isVisibleTo(tab1) || !b->text().contains(QString::fromUtf8("Belegungsplan")));
+    // nur eine Tabelle im Tab (keine doppelte Jobliste unten)
+    QCOMPARE(tab1->findChildren<QTableView*>().size(), 1);
+    // Plot oben vorhanden und nimmt Breite ein
+    QVERIFY(tab1->findChild<PlotWidget*>());
 }
 
 QTEST_MAIN(TestGui)

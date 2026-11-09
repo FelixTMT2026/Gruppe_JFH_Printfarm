@@ -16,6 +16,8 @@
 #include <QPushButton>
 #include <QGroupBox>
 #include <QMessageBox>
+#include <QDialog>
+#include <QDialogButtonBox>
 
 TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *parent)
     : QWidget(parent), m_store(store), m_loader(loader), m_aktuellerAuftrag(QString())
@@ -32,14 +34,29 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     m_ergebnisFilter->addItem(QStringLiteral("abgebrochen"), QStringLiteral("abgebrochen"));
     m_ergebnisFilter->addItem(QStringLiteral("fehlgeschlagen"), QStringLiteral("fehlgeschlagen"));
     m_ergebnisFilter->addItem(QStringLiteral("ausstehend"), QStringLiteral("ausstehend"));
-    auto *planBtn = new QPushButton(tr("Auftragsplanung (Greedy)"), this);
-    planBtn->setToolTip(tr("Geplante Aufträge greedy auf geeignete Drucker verteilen (Gantt)"));
+    m_planBtn = new QPushButton(tr("Belegungsplan (Gantt)"), this);
+    m_planBtn->setToolTip(tr("Geplante Aufträge greedy auf geeignete Drucker verteilen (nur Admin)"));
+    // Belegungsplan nur für Admin sichtbar
+    m_planBtn->setVisible(Auth::rolle() == Auth::Admin);
     filter->addWidget(m_suche, 1);
     filter->addWidget(m_ergebnisFilter);
-    filter->addWidget(planBtn);
+    filter->addWidget(m_planBtn);
     layout->addLayout(filter);
 
-    auto *splitter = new QSplitter(Qt::Horizontal, this);
+    // oben: Protokollansicht auf voller Breite
+    auto *detailBox = new QGroupBox(tr("Protokoll / Verlauf / Auswertung"), this);
+    auto *dl = new QVBoxLayout(detailBox);
+    m_info = new QLabel(detailBox);
+    m_info->setWordWrap(true);
+    m_plot = new PlotWidget(detailBox);
+    m_kosten = new QLabel(detailBox);
+    m_kosten->setWordWrap(true);
+    dl->addWidget(m_info);
+    dl->addWidget(m_plot, 1);
+    dl->addWidget(m_kosten);
+    layout->addWidget(detailBox, 3);
+
+    // darunter: Jobliste
     m_model = new AuftragModel(store, this);
     connect(store, &DataStore::datenGeladen, m_model, &AuftragModel::refresh);
     connect(store, &DataStore::datenGeladen, this, &TeileWidget::initialAuswahl);
@@ -48,34 +65,7 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     m_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_view->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_view->setSortingEnabled(true);
-    splitter->addWidget(m_view);
-
-    auto *rechts = new QGroupBox(tr("Detail / Verlauf / Auswertung"), this);
-    auto *rl = new QVBoxLayout(rechts);
-    m_info = new QLabel(rechts);
-    m_info->setWordWrap(true);
-    m_plot = new PlotWidget(rechts);
-    m_kosten = new QLabel(rechts);
-    m_kosten->setWordWrap(true);
-    rl->addWidget(m_info);
-    rl->addWidget(m_plot, 1);
-    rl->addWidget(m_kosten);
-    splitter->addWidget(rechts);
-    layout->addWidget(splitter);
-
-    auto *ganttBox = new QGroupBox(tr("Belegungsplan (Gantt) - geplante Aufträge"), this);
-    auto *gl = new QVBoxLayout(ganttBox);
-    m_ganttPlot = new GanttWidget(ganttBox);
-    m_ganttPlot->leeren();
-    gl->addWidget(m_ganttPlot);
-    m_ganttModel = new AuftragModel(store, ganttBox);
-    connect(store, &DataStore::datenGeladen, m_ganttModel, &AuftragModel::refresh);
-    m_ganttView = new QTableView(ganttBox);
-    m_ganttView->setModel(m_ganttModel);
-    m_ganttView->setMaximumHeight(140);
-    m_ganttView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    gl->addWidget(m_ganttView);
-    layout->addWidget(ganttBox);
+    layout->addWidget(m_view, 2);
 
     connect(m_suche, &QLineEdit::textChanged, this, [this]() {
         m_model->setFilter(m_suche->text(), m_ergebnisFilter->currentData().toString());
@@ -86,7 +76,7 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     connect(m_view, &QTableView::doubleClicked, this, [this](const QModelIndex &idx) {
         if (const Auftrag *a = m_model->auftragAt(idx.row())) zeigeAuftrag(*a);
     });
-    connect(planBtn, &QPushButton::clicked, this, &TeileWidget::planeAuftraege);
+    connect(m_planBtn, &QPushButton::clicked, this, &TeileWidget::planeAuftraege);
     connect(m_loader, &ProtocolLoader::fertig, this, [this](const QString &id) {
         emit statusMeldung(tr("Protokoll %1 im Hintergrund geladen (Cache).").arg(id));
         // wenn das gerade der angezeigte Auftrag ist: Ansicht aktualisieren
@@ -178,9 +168,10 @@ void TeileWidget::initialAuswahl()
 
 void TeileWidget::planeAuftraege()
 {
-    if (!Auth::darfAuftraegePlanen()) {
+    // Belegungsplan nur als Admin
+    if (Auth::rolle() != Auth::Admin) {
         QMessageBox::information(this, tr("Rechte"),
-            tr("Planung erfordert die Rolle „technik“ oder „admin“."));
+            tr("Der Belegungsplan ist nur für die Rolle „admin“ verfügbar."));
         return;
     }
     QList<Auftrag> ausstehend;
@@ -189,15 +180,25 @@ void TeileWidget::planeAuftraege()
             ausstehend.append(a);
     const auto zuweisungen = Planung::greedy(ausstehend, m_store->drucker(), *m_store,
                                              QDateTime::currentDateTime());
-    m_letztePlanung = zuweisungen;
-    m_ganttModel->resetFilter();
-    m_ganttModel->setFilter({}, QStringLiteral("ausstehend"));
     QStringList druckerIds;
     for (const auto &z : zuweisungen)
         if (!druckerIds.contains(z.druckerId)) druckerIds.append(z.druckerId);
-    m_ganttPlot->setPlanung(zuweisungen, druckerIds);
     m_store->addLog(LogEintrag::System,
         tr("Greedy-Planung: %1 geplante Aufträge auf %2 Zuweisungen verteilt")
             .arg(ausstehend.size()).arg(zuweisungen.size()));
-    emit statusMeldung(tr("Planung: %1 Zuweisungen (siehe Gantt-Diagramm).").arg(zuweisungen.size()));
+    emit statusMeldung(tr("Planung: %1 Zuweisungen (siehe Belegungsplan).").arg(zuweisungen.size()));
+
+    // Belegungsplan als Popup-Dialog
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Belegungsplan (Gantt) - geplante Aufträge"));
+    dlg.resize(900, 500);
+    auto *dl = new QVBoxLayout(&dlg);
+    auto *gantt = new GanttWidget(&dlg);
+    gantt->setPlanung(zuweisungen, druckerIds);
+    dl->addWidget(gantt);
+    auto *btns = new QDialogButtonBox(QDialogButtonBox::Close, &dlg);
+    connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    dl->addWidget(btns);
+    dlg.exec();
 }
