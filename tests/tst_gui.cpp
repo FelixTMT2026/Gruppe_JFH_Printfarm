@@ -48,6 +48,7 @@ private slots:
     void protokollOhneAnmeldungSichtbar();
     void belegungsplanNurFuerAdmin();
     void dezimalpunktIstPunkt();
+    void spracheUmschaltungKomplett();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -331,6 +332,9 @@ void TestGui::tabBleibtNachUiNeuaufbauErhalten()
     QVERIFY(tabs);
     QCOMPARE(tabs->currentIndex(), 3);   // gleicher Tab wie vorher
     tabs->setCurrentIndex(0);
+    // sauber auf Deutsch zurücklassen
+    if (w->findChild<QTabWidget*>() && w->findChild<QTabWidget*>()->tabText(0) != QString::fromUtf8("Druckerliste"))
+        w->menuBar()->actions().at(1)->menu()->actions().last()->trigger();
 }
 
 void TestGui::sortierungMitDuplikatenCrashfrei()
@@ -446,6 +450,52 @@ void TestGui::dezimalpunktIstPunkt()
     QString text = delegate->displayText(v, QLocale());
     QVERIFY(!text.contains(QLatin1Char(',')));
     QVERIFY(!text.contains(QLatin1Char('.')));
+}
+
+void TestGui::spracheUmschaltungKomplett()
+{
+    // Sprachaktion = letzter Eintrag im Ansicht/View-Menü (zustandsunabhängig)
+    auto sprachAktion = [this]() -> QAction* {
+        return w->menuBar()->actions().at(1)->menu()->actions().last();
+    };
+    if (w->findChild<QTabWidget*>()->tabText(0) != QString::fromUtf8("Druckerliste"))
+        sprachAktion()->trigger();   // erst auf Deutsch
+    // auf Englisch umschalten
+    sprachAktion()->trigger();
+    auto *tabs = w->findChild<QTabWidget*>();
+    QVERIFY(tabs);
+    // Tabs übersetzt
+    QCOMPARE(tabs->tabText(0), QStringLiteral("Printers"));
+    QCOMPARE(tabs->tabText(1), QStringLiteral("Printed parts"));
+    QCOMPARE(tabs->tabText(3), QStringLiteral("Error log"));
+    // Menüs übersetzt
+    QVERIFY(w->menuBar()->actions()[0]->text().contains(QStringLiteral("File")));
+    // Filter-Combo im Drucker-Tab übersetzt
+    auto *tab0 = tabs->widget(0);
+    bool foundAllStatuses = false;
+    for (auto *c : tab0->findChildren<QComboBox*>())
+        if (c->itemText(0) == QStringLiteral("All statuses")) foundAllStatuses = true;
+    QVERIFY(foundAllStatuses);
+    // Fehlerlog-Kategorie-Combo übersetzt
+    auto *tab3 = tabs->widget(3);
+    bool foundAllCat = false;
+    for (auto *c : tab3->findChildren<QComboBox*>())
+        if (c->itemText(0) == QStringLiteral("All categories")) foundAllCat = true;
+    QVERIFY(foundAllCat);
+    // Protokoll-/Dateninhalte bleiben Deutsch (z. B. Ergebniswerte in der Tabelle)
+    auto *tab1 = tabs->widget(1);
+    auto *view1 = tab1->findChild<QTableView*>();
+    auto *amodel = static_cast<AuftragModel*>(view1->model());
+    bool deutschBleibt = false;
+    for (int i = 0; i < amodel->rowCount(); ++i) {
+        const QString e = amodel->data(amodel->index(i, AuftragModel::ColErgebnis), Qt::DisplayRole).toString();
+        if (e == QLatin1String("erfolgreich") || e == QLatin1String("ausstehend")) deutschBleibt = true;
+    }
+    QVERIFY(deutschBleibt);
+    // zurück auf Deutsch
+    sprachAktion()->trigger();
+    tabs = w->findChild<QTabWidget*>();
+    QCOMPARE(tabs->tabText(0), QString::fromUtf8("Druckerliste"));
 }
 
 QTEST_MAIN(TestGui)
