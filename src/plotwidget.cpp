@@ -50,10 +50,10 @@ void PlotWidget::zeigeProtokoll(const Protokoll &p)
         sDuese->append(m.zeitS / 60.0, m.dueseIstC);
         sBett->append(m.zeitS / 60.0, m.bettIstC);
     }
-    // Ereignis-Markierungen als senkrechte Linien
+    // Ereignis-Markierungen als senkrechte Linien (nur Pause/Abbruch, nicht Start/Ende)
     for (const auto &ev : p.ereignisse) {
-        if (ev.typ == QLatin1String("druck_start") || ev.typ == QLatin1String("pause") ||
-            ev.typ == QLatin1String("druck_ende")) {
+        if (ev.typ == QLatin1String("pause") || ev.typ == QLatin1String("fortsetzen") ||
+            ev.typ == QLatin1String("abbruch")) {
             QString evName;
             if (ev.typ == QLatin1String("druck_start")) evName = tr("Druckstart");
             else if (ev.typ == QLatin1String("pause")) evName = tr("Pause");

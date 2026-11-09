@@ -523,7 +523,8 @@ void TestGui::plotLegendeUebersetzt()
         names << s->name();
     QVERIFY(names.contains(QString::fromUtf8("Düsentemperatur")));
     QVERIFY(names.contains(QString::fromUtf8("Betttemperatur")));
-    QVERIFY(names.contains(QString::fromUtf8("Druckstart")));
+    QVERIFY(!names.contains(QString::fromUtf8("Druckstart")));          // Start/Ende nicht im Plot
+    QVERIFY(!names.contains(QString::fromUtf8("Druckende")));
     QVERIFY(!names.contains(QString::fromUtf8("Düse Ist (Druck)")));   // alte Namen weg
 
     // Englisch umschalten -> Legende übersetzt
@@ -546,7 +547,8 @@ void TestGui::plotLegendeUebersetzt()
         names << s->name();
     QVERIFY(names.contains(QStringLiteral("Nozzle temperature")));
     QVERIFY(names.contains(QStringLiteral("Bed temperature")));
-    QVERIFY(names.contains(QStringLiteral("Print start")));
+    QVERIFY(!names.contains(QStringLiteral("Print start")));
+    QVERIFY(!names.contains(QStringLiteral("Print end")));
     // zurück auf Deutsch
     w->menuBar()->actions().at(1)->menu()->actions().last()->trigger();
 }
