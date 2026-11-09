@@ -14,6 +14,9 @@
 #include "regelguete.h"
 #include "dialogs.h"
 #include "plotwidget.h"
+#include "ganttwidget.h"
+#include "analyse.h"
+#include <QLabel>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -26,6 +29,12 @@ private slots:
     void protokollUndRegelgueteEchteDaten();
     void themeUndSpracheUmschaltbar();
     void detailDialogOeffnetSich();
+    // --- QA-Runde 2 ---
+    void spracheWechseltTabTexte();
+    void materialTabStatistikGefuellt();
+    void fehlerlogHatEintraege();
+    void teileFilterAusstehend();
+    void ganttLaesstSichZeichnen();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -159,6 +168,103 @@ void TestGui::detailDialogOeffnetSich()
     dlg.show();
     QTest::qWait(50);
     QVERIFY(dlg.isVisible() || true);   // offscreen: show() genügt als Smoke-Test
+}
+
+// ---------------- QA-Runde 2: GUI ----------------------------------------
+
+void TestGui::spracheWechseltTabTexte()
+{
+    auto *tabs = w->findChild<QTabWidget*>();
+    QVERIFY(tabs);
+    QCOMPARE(tabs->tabText(0), QString::fromUtf8("Druckerliste"));
+    // Sprache auf Englisch umschalten (Menü Ansicht -> letzter Eintrag)
+    QAction *lang = nullptr;
+    for (auto *m : w->menuBar()->actions()) {
+        for (auto *a : m->menu()->actions())
+            if (a->text().contains(QStringLiteral("English")))
+                lang = a;
+    }
+    QVERIFY(lang);
+    lang->trigger();
+    tabs = w->findChild<QTabWidget*>();   // UI wurde neu aufgebaut
+    QVERIFY(tabs);
+    QCOMPARE(tabs->tabText(0), QStringLiteral("Printers"));
+    // zurück auf Deutsch
+    for (auto *m : w->menuBar()->actions()) {
+        for (auto *a : m->menu()->actions())
+            if (a->text().contains(QString::fromUtf8("Deutsch")))
+                lang = a;
+    }
+    QVERIFY(lang);
+    lang->trigger();
+    tabs = w->findChild<QTabWidget*>();
+    QCOMPARE(tabs->tabText(0), QString::fromUtf8("Druckerliste"));
+}
+
+void TestGui::materialTabStatistikGefuellt()
+{
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab2 = tabs->widget(2);
+    const auto labels = tab2->findChildren<QLabel*>();
+    bool statsGefuellt = false;
+    for (auto *l : labels)
+        if (l->text().contains(QString::fromUtf8("Statistiken")) && l->text().length() > 50)
+            statsGefuellt = true;
+    QVERIFY(statsGefuellt);
+    // Material-Tabelle gefüllt (10 Materialien, 7 Spalten im MaterialModel)
+    const auto views = tab2->findChildren<QTableView*>();
+    QVERIFY(!views.isEmpty());
+    bool materialTabelleGefuellt = false;
+    for (auto *v : views)
+        if (v->model()->columnCount() == 7 && v->model()->rowCount() == 10)
+            materialTabelleGefuellt = true;
+    QVERIFY(materialTabelleGefuellt);
+}
+
+void TestGui::fehlerlogHatEintraege()
+{
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab3 = tabs->widget(3);
+    auto *view = tab3->findChild<QTableView*>();
+    QVERIFY(view);
+    QVERIFY(view->model()->rowCount() > 0);   // mind. System-/Validierungs-Einträge
+}
+
+void TestGui::teileFilterAusstehend()
+{
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab1 = tabs->widget(1);
+    auto *view = tab1->findChild<QTableView*>();
+    QVERIFY(view);
+    auto *model = view->model();
+    const int gesamt = model->rowCount();
+    QVERIFY(gesamt > 1500);   // echte Daten: 1633 Aufträge
+    // Ergebnis-Filter "ausstehend" wählen (17 in den echten Daten)
+    QComboBox *erg = nullptr;
+    for (auto *c : tab1->findChildren<QComboBox*>())
+        if (c->findData(QStringLiteral("ausstehend")) >= 0) erg = c;
+    QVERIFY(erg);
+    erg->setCurrentIndex(erg->findData(QStringLiteral("ausstehend")));
+    QCOMPARE(model->rowCount(), 17);
+    QVERIFY(model->rowCount() < gesamt);
+    erg->setCurrentIndex(0);
+    QCOMPARE(model->rowCount(), gesamt);
+}
+
+void TestGui::ganttLaesstSichZeichnen()
+{
+    GanttWidget g;
+    QList<Planung::Zuweisung> z = {
+        {"J1", "D001", QDateTime(QDate(2026,1,5), QTime(8,0)), QDateTime(QDate(2026,1,5), QTime(10,0))},
+        {"J2", "D001", QDateTime(QDate(2026,1,5), QTime(10,0)), QDateTime(QDate(2026,1,5), QTime(11,0))},
+        {"J3", "D002", QDateTime(QDate(2026,1,5), QTime(8,0)), QDateTime(QDate(2026,1,5), QTime(9,30))},
+    };
+    g.setPlanung(z, {"D001", "D002"});
+    g.resize(600, 200);
+    g.show();
+    QTest::qWait(30);
+    g.leeren();
+    QVERIFY(true);   // kein Crash beim Zeichnen
 }
 
 QTEST_MAIN(TestGui)

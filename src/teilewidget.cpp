@@ -28,8 +28,10 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     m_suche->setClearButtonEnabled(true);
     m_ergebnisFilter = new QComboBox(this);
     m_ergebnisFilter->addItem(tr("Alle Ergebnisse"), QString());
-    m_ergebnisFilter->addItems({QStringLiteral("erfolgreich"), QStringLiteral("abgebrochen"),
-                                QStringLiteral("fehlgeschlagen"), QStringLiteral("ausstehend")});
+    m_ergebnisFilter->addItem(QStringLiteral("erfolgreich"), QStringLiteral("erfolgreich"));
+    m_ergebnisFilter->addItem(QStringLiteral("abgebrochen"), QStringLiteral("abgebrochen"));
+    m_ergebnisFilter->addItem(QStringLiteral("fehlgeschlagen"), QStringLiteral("fehlgeschlagen"));
+    m_ergebnisFilter->addItem(QStringLiteral("ausstehend"), QStringLiteral("ausstehend"));
     auto *planBtn = new QPushButton(tr("Auftragsplanung (Greedy)"), this);
     planBtn->setToolTip(tr("Geplante Aufträge greedy auf geeignete Drucker verteilen (Gantt)"));
     filter->addWidget(m_suche, 1);

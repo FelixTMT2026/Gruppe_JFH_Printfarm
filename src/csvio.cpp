@@ -41,13 +41,50 @@ bool CsvIo::write(const QString &path, const QList<QStringList> &rows, QString *
 
 QStringList CsvIo::splitLine(const QString &line)
 {
-    // Die Projektdaten enthalten keine eingebetteten Trennzeichen/Quotes.
-    return line.split(QLatin1Char(','));
+    // RFC-4180-artig: Felder mit Komma/Quote/Umbruch stehen in doppelten Quotes
+    // ("" = escaped quote). Die vorliegenden Projektdaten haben keine Quotes,
+    // bleiben also unverändert kompatibel.
+    QStringList out;
+    QString cur;
+    bool inQuotes = false;
+    for (int i = 0; i < line.size(); ++i) {
+        const QChar c = line[i];
+        if (inQuotes) {
+            if (c == QLatin1Char('"')) {
+                if (i + 1 < line.size() && line[i + 1] == QLatin1Char('"')) {
+                    cur += QLatin1Char('"');
+                    ++i;
+                } else {
+                    inQuotes = false;
+                }
+            } else {
+                cur += c;
+            }
+        } else {
+            if (c == QLatin1Char('"')) {
+                inQuotes = true;
+            } else if (c == QLatin1Char(',')) {
+                out.append(cur);
+                cur.clear();
+            } else {
+                cur += c;
+            }
+        }
+    }
+    out.append(cur);
+    return out;
 }
 
 QString CsvIo::joinLine(const QStringList &fields)
 {
-    return fields.join(QLatin1Char(','));
+    QStringList quoted;
+    for (const auto &f : fields) {
+        if (f.contains(QLatin1Char(',')) || f.contains(QLatin1Char('"')) || f.contains(QLatin1Char('\n')))
+            quoted.append(QStringLiteral("\"%1\"").arg(QString(f).replace(QLatin1Char('"'), QStringLiteral("\"\""))));
+        else
+            quoted.append(f);
+    }
+    return quoted.join(QLatin1Char(','));
 }
 
 QDateTime CsvIo::parseDateTime(const QString &s)

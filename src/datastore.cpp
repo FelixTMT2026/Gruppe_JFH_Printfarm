@@ -81,7 +81,7 @@ bool DataStore::loadModelle(const QString &path)
             return true;
         });
     for (const auto &e : errors)
-        addLog(LogEintrag::Import, QStringLiteral("modelle.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
+        addLog(ok ? LogEintrag::Import : LogEintrag::Datei, QStringLiteral("modelle.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
     if (!ok && errors.isEmpty())
         addLog(LogEintrag::Datei, QStringLiteral("modelle.csv konnte nicht geladen werden"));
     return ok;
@@ -100,7 +100,7 @@ bool DataStore::loadMaterialien(const QString &path)
             return true;
         });
     for (const auto &e : errors)
-        addLog(LogEintrag::Import, QStringLiteral("materialien.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
+        addLog(ok ? LogEintrag::Import : LogEintrag::Datei, QStringLiteral("materialien.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
     if (!ok && errors.isEmpty())
         addLog(LogEintrag::Datei, QStringLiteral("materialien.csv konnte nicht geladen werden"));
     return ok;
@@ -123,7 +123,7 @@ bool DataStore::loadDrucker(const QString &path)
             return true;
         });
     for (const auto &e : errors)
-        addLog(LogEintrag::Import, QStringLiteral("drucker.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
+        addLog(ok ? LogEintrag::Import : LogEintrag::Datei, QStringLiteral("drucker.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
     if (!ok && errors.isEmpty())
         addLog(LogEintrag::Datei, QStringLiteral("drucker.csv konnte nicht geladen werden"));
     return ok;
@@ -143,7 +143,7 @@ bool DataStore::loadAuftraege(const QString &path)
             return true;
         });
     for (const auto &e : errors)
-        addLog(LogEintrag::Import, QStringLiteral("auftraege.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
+        addLog(ok ? LogEintrag::Import : LogEintrag::Datei, QStringLiteral("auftraege.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
     if (!ok && errors.isEmpty())
         addLog(LogEintrag::Datei, QStringLiteral("auftraege.csv konnte nicht geladen werden"));
     return ok;
@@ -160,7 +160,7 @@ bool DataStore::loadWartungen(const QString &path)
             return !w.wartungId.isEmpty();
         });
     for (const auto &e : errors)
-        addLog(LogEintrag::Import, QStringLiteral("wartungen.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
+        addLog(ok ? LogEintrag::Import : LogEintrag::Datei, QStringLiteral("wartungen.csv Zeile %1: %2").arg(e.zeile).arg(e.meldung));
     return ok;
 }
 
@@ -180,7 +180,13 @@ void DataStore::plausibilitaet()
             ++fehler;
         }
     }
+    const QSet<QString> erlaubtErgebnis = {QStringLiteral("erfolgreich"), QStringLiteral("abgebrochen"),
+                                            QStringLiteral("fehlgeschlagen"), QStringLiteral("ausstehend")};
     for (const auto &a : m_auftraege) {
+        if (!erlaubtErgebnis.contains(a.ergebnis))
+            addLog(LogEintrag::Validierung,
+                   QStringLiteral("Auftrag %1 hat ungültiges Ergebnis „%2“ (erlaubt: erfolgreich/abgebrochen/fehlgeschlagen/ausstehend)")
+                       .arg(a.auftragId, a.ergebnis), a.auftragId);
         if (!m_druckerMap.contains(a.druckerId)) {
             addLog(LogEintrag::Validierung,
                    QStringLiteral("Auftrag %1 verweist auf unbekannten Drucker %2").arg(a.auftragId, a.druckerId), a.auftragId);

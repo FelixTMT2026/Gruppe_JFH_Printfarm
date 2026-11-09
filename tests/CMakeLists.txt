@@ -14,6 +14,10 @@ target_include_directories(tst_printfarm PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(tst_printfarm PRIVATE Qt6::Core Qt6::Gui Qt6::Sql Qt6::Test)
 add_test(NAME printfarm COMMAND tst_printfarm)
 
+# Qt-Plugin-Pfad für headless-QA (offscreen) unter ctest auflösen
+file(TO_CMAKE_PATH "${Qt6_DIR}/../../../plugins" QT_PLUGINS_DIR)
+set_tests_properties(printfarm PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
 # GUI-QA-Test (Widgets, offscreen)
 qt_add_executable(tst_gui
     tst_gui.cpp
@@ -31,3 +35,4 @@ qt_add_executable(tst_gui
 target_include_directories(tst_gui PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(tst_gui PRIVATE Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::Gui Qt6::Core Qt6::Test)
 add_test(NAME gui COMMAND tst_gui)
+set_tests_properties(gui PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_PLUGIN_PATH=${QT_PLUGINS_DIR}")

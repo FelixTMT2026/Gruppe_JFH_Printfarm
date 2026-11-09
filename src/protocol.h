@@ -30,6 +30,7 @@ public:
     void loadAsync(const QString &auftragId);
 
     bool cached(const QString &auftragId) const;
+    int cacheSize() const { return m_cache.size(); }   // für Tests (LRU)
 
 signals:
     void fertig(const QString &auftragId);
