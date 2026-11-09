@@ -12,7 +12,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets Charts Sql Test LinguistTools)
 qt_standard_project_setup()
 
 # ---------------------------------------------------------------- Anwendung
-qt_add_executable(Gruppe_JFH_Printfarm
+qt_add_executable(Gruppe_JFH_Printfarm WIN32   # WIN32 = GUI-Subsystem, kein Konsolenfenster
     src/main.cpp
     src/datatypes.h
     src/csvio.h            src/csvio.cpp
@@ -33,8 +33,9 @@ qt_add_executable(Gruppe_JFH_Printfarm
 )
 
 target_include_directories(Gruppe_JFH_Printfarm PRIVATE src)
+set_target_properties(Gruppe_JFH_Printfarm PROPERTIES WIN32_EXECUTABLE TRUE)
 target_link_libraries(Gruppe_JFH_Printfarm PRIVATE
-    Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::Gui Qt6::Core)
+    Qt6::Widgets Qt6::Charts Qt6::Sql Qt6::Gui Qt6::Core Qt6::EntryPointPrivate)
 
 # Übersetzungen (Deutsch/Englisch) zur Laufzeit umschaltbar; die .qm-Dateien
 # werden neben die Anwendung kopiert und dort per applicationDirPath geladen.
