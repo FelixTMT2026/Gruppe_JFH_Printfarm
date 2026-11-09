@@ -51,6 +51,7 @@ private slots:
     void dezimalpunktIstPunkt();
     void spracheUmschaltungKomplett();
     void plotLegendeUebersetzt();
+    void singleClickAktualisiertProtokoll();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -548,6 +549,33 @@ void TestGui::plotLegendeUebersetzt()
     QVERIFY(names.contains(QStringLiteral("Print start")));
     // zurück auf Deutsch
     w->menuBar()->actions().at(1)->menu()->actions().last()->trigger();
+}
+
+void TestGui::singleClickAktualisiertProtokoll()
+{
+    // Single-Click auf anderen Job -> Plot-Titel (enthält Auftrags-ID) muss wechseln
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab1 = tabs->widget(1);
+    auto *view = tab1->findChild<QTableView*>();
+    auto *plot = tab1->findChild<PlotWidget*>();
+    auto *model = static_cast<AuftragModel*>(view->model());
+    int z1 = -1, z2 = -1;
+    for (int i = 0; i < model->rowCount(); ++i) {
+        const auto *a = model->auftragAt(i);
+        if (a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+            if (z1 < 0) z1 = i; else { z2 = i; break; }
+        }
+    }
+    QVERIFY(z1 >= 0 && z2 >= 0);
+    emit view->clicked(model->index(z1, 0));
+    QTest::qWait(30);
+    const QString t1 = plot->chart()->title();
+    QVERIFY(t1.contains(model->auftragAt(z1)->auftragId));
+    emit view->clicked(model->index(z2, 0));   // Single-Click auf neuen Job
+    QTest::qWait(30);
+    const QString t2 = plot->chart()->title();
+    QVERIFY(t2.contains(model->auftragAt(z2)->auftragId));
+    QVERIFY(t1 != t2);
 }
 
 QTEST_MAIN(TestGui)

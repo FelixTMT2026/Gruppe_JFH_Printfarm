@@ -69,7 +69,7 @@ DruckerDetailDialog::DruckerDetailDialog(const Drucker &d, const DataStore *stor
     m_auftraegeView->setModel(m_model);
     m_auftraegeView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_auftraegeView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    connect(m_auftraegeView, &QTableView::doubleClicked, this, [this](const QModelIndex &idx) {
+    connect(m_auftraegeView, &QTableView::clicked, this, [this](const QModelIndex &idx) {
         if (const Auftrag *a = m_model->auftragAt(idx.row())) zeigeAuftrag(*a);
     });
     splitter->addWidget(m_auftraegeView);

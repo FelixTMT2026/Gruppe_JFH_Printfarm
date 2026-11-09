@@ -73,7 +73,8 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     connect(m_ergebnisFilter, &QComboBox::currentIndexChanged, this, [this]() {
         m_model->setFilter(m_suche->text(), m_ergebnisFilter->currentData().toString());
     });
-    connect(m_view, &QTableView::doubleClicked, this, [this](const QModelIndex &idx) {
+    // Single-Click genügt: Protokoll aktualisiert sich sofort
+    connect(m_view, &QTableView::clicked, this, [this](const QModelIndex &idx) {
         if (const Auftrag *a = m_model->auftragAt(idx.row())) zeigeAuftrag(*a);
     });
     connect(m_planBtn, &QPushButton::clicked, this, &TeileWidget::planeAuftraege);
