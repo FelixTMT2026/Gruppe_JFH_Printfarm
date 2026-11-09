@@ -50,6 +50,7 @@ public:
 
 signals:
     void logChanged();
+    void datenGeladen();   // nach erfolgreichem Laden/Import der Stammdaten
 
 private:
     bool loadDrucker(const QString &path);

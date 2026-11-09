@@ -17,6 +17,7 @@ public:
     const Drucker *druckerAt(int row) const;
     void setFilter(const QString &text, const QString &statusFilter, const QString &kinematikFilter);
     void resetFilter();
+    void refresh() { rebuild(); }   // nach (Neu-)Laden der Daten
 private:
     void rebuild();
     const DataStore *m_store;
@@ -37,6 +38,7 @@ public:
     void setFilter(const QString &text, const QString &ergebnisFilter); // text: id/drucker/bauteil
     void setNurDrucker(const QString &druckerId);   // leer = alle
     void resetFilter();
+    void refresh() { rebuild(); }
 private:
     void rebuild();
     const DataStore *m_store;
@@ -53,6 +55,8 @@ public:
     int columnCount(const QModelIndex &p = {}) const override;
     QVariant data(const QModelIndex &i, int role) const override;
     QVariant headerData(int s, Qt::Orientation o, int role) const override;
+public slots:
+    void refresh() { beginResetModel(); endResetModel(); }
 private:
     const DataStore *m_store;
 };
@@ -66,6 +70,8 @@ public:
     int columnCount(const QModelIndex &p = {}) const override;
     QVariant data(const QModelIndex &i, int role) const override;
     QVariant headerData(int s, Qt::Orientation o, int role) const override;
+public slots:
+    void refresh() { beginResetModel(); endResetModel(); }
 private:
     const DataStore *m_store;
 };
@@ -80,6 +86,7 @@ public:
     QVariant data(const QModelIndex &i, int role) const override;
     QVariant headerData(int s, Qt::Orientation o, int role) const override;
     void setNurDrucker(const QString &druckerId);
+    void refresh() { rebuild(); }
 private:
     void rebuild();
     const DataStore *m_store;

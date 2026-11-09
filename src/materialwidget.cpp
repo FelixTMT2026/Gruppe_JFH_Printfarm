@@ -18,6 +18,7 @@ MaterialWidget::MaterialWidget(DataStore *store, QWidget *parent)
     auto *ml = new QVBoxLayout(matBox);
     auto *matView = new QTableView(matBox);
     auto *matModel = new MaterialModel(store, matBox);
+    connect(store, &DataStore::datenGeladen, matModel, &MaterialModel::refresh);
     matView->setModel(matModel);
     matView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ml->addWidget(matView);
@@ -27,6 +28,7 @@ MaterialWidget::MaterialWidget(DataStore *store, QWidget *parent)
     auto *mol = new QVBoxLayout(modBox);
     auto *modView = new QTableView(modBox);
     auto *modModel = new ModellModel(store, modBox);
+    connect(store, &DataStore::datenGeladen, modModel, &ModellModel::refresh);
     modView->setModel(modModel);
     modView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     mol->addWidget(modView);
@@ -36,6 +38,7 @@ MaterialWidget::MaterialWidget(DataStore *store, QWidget *parent)
     auto *wl = new QVBoxLayout(wartBox);
     auto *wartView = new QTableView(wartBox);
     auto *wartModel = new WartungModel(store, wartBox);
+    connect(store, &DataStore::datenGeladen, wartModel, &WartungModel::refresh);
     wartView->setModel(wartModel);
     wartView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     wl->addWidget(wartView);
@@ -47,7 +50,13 @@ MaterialWidget::MaterialWidget(DataStore *store, QWidget *parent)
     m_stats = new QLabel(this);
     m_stats->setWordWrap(true);
     layout->addWidget(m_stats);
+    connect(store, &DataStore::datenGeladen, this, &MaterialWidget::aktualisiereStats);
+    aktualisiereStats();
+}
 
+void MaterialWidget::aktualisiereStats()
+{
+    const DataStore *store = m_store;
     QMap<QString, QPair<int,int>> proMaterial;   // material -> (fertig, erfolgreich)
     QMap<QString, int> fehlercodes;
     double filamentGes = 0, kostenGes = 0;

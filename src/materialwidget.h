@@ -10,6 +10,7 @@ class MaterialWidget : public QWidget {
 public:
     explicit MaterialWidget(DataStore *store, QWidget *parent = nullptr);
 private:
+    void aktualisiereStats();
     DataStore *m_store;
     class QLabel *m_stats;
 };

@@ -26,6 +26,7 @@ bool DataStore::loadFromFolder(const QString &folder)
     for (const auto &d : m_drucker) m_druckerMap.insert(d.druckerId, &d);
     plausibilitaet();
     emit logChanged();
+    emit datenGeladen();
     return ok;
 }
 
@@ -301,6 +302,7 @@ bool DataStore::importSqlite(const QString &dbPath)
     addLog(LogEintrag::System, QStringLiteral("SQLite-Import aus %1: %2 Drucker, %3 Aufträge")
                .arg(dbPath).arg(m_drucker.size()).arg(m_auftraege.size()));
     emit logChanged();
+    emit datenGeladen();
     return true;
 }
 

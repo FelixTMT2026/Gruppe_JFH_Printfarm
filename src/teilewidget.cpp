@@ -37,6 +37,7 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
 
     auto *splitter = new QSplitter(Qt::Horizontal, this);
     m_model = new AuftragModel(store, this);
+    connect(store, &DataStore::datenGeladen, m_model, &AuftragModel::refresh);
     m_view = new QTableView(this);
     m_view->setModel(m_model);
     m_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -60,6 +61,7 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     auto *ganttBox = new QGroupBox(tr("Belegungsplan (Gantt) — geplante Aufträge"), this);
     auto *gl = new QVBoxLayout(ganttBox);
     m_ganttModel = new AuftragModel(store, ganttBox);
+    connect(store, &DataStore::datenGeladen, m_ganttModel, &AuftragModel::refresh);
     m_ganttView = new QTableView(ganttBox);
     m_ganttView->setModel(m_ganttModel);
     m_ganttView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);

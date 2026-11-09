@@ -31,4 +31,5 @@ FehlerlogWidget::FehlerlogWidget(DataStore *store, QWidget *parent)
         m_model->setKategorieFilter(m_katFilter->currentData().toInt());
     });
     connect(store, &DataStore::logChanged, m_model, &LogModel::refresh);
+    connect(store, &DataStore::datenGeladen, m_model, &LogModel::refresh);
 }

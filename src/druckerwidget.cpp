@@ -33,6 +33,7 @@ DruckerWidget::DruckerWidget(DataStore *store, ProtocolLoader *loader, QWidget *
     layout->addLayout(filter);
 
     m_model = new DruckerModel(store, this);
+    connect(store, &DataStore::datenGeladen, m_model, &DruckerModel::refresh);
     m_view = new QTableView(this);
     m_view->setModel(m_model);
     m_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
