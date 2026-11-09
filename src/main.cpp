@@ -13,21 +13,33 @@ int main(int argc, char *argv[])
 
     MainWindow w;
 
-    // Datenordner relativ zur Anwendung auflösen (offline, relative Pfade):
-    // Kandidaten: data/, QT-Projekt_info/PrintFarm_Daten/PrintFarm_Daten (Repo-Layout)
+    // Datenordner relativ zur Anwendung auflösen (offline, relative Pfade).
+    // Vom Exe-Pfad und vom Arbeitsverzeichnis jeweils nach oben suchen, damit
+    // der Start auch über eine Verknüpfung aus einem beliebigen Verzeichnis klappt.
     const QString appDir = QCoreApplication::applicationDirPath();
-    const QStringList kandidaten = {
-        appDir + "/data",
-        appDir + "/QT-Projekt_info/PrintFarm_Daten/PrintFarm_Daten",
-        QStringLiteral("data"),
-        QStringLiteral("QT-Projekt_info/PrintFarm_Daten/PrintFarm_Daten")
+    const QStringList datenMarker = {
+        QStringLiteral("data/drucker.csv"),
+        QStringLiteral("QT-Projekt_info/PrintFarm_Daten/PrintFarm_Daten/drucker.csv")
     };
-    bool geladen = false;
-    for (const auto &k : kandidaten) {
-        if (QFileInfo::exists(k + "/drucker.csv")) {
-            geladen = w.ladeDatenordner(QDir(k).absolutePath());
-            if (geladen) break;
+    QString gefunden;
+    for (const QString &start : {appDir, QDir::currentPath()}) {
+        QDir d(start);
+        for (int i = 0; i < 6 && gefunden.isEmpty(); ++i) {
+            for (const auto &m : datenMarker) {
+                if (QFileInfo::exists(d.absoluteFilePath(m))) {
+                    gefunden = d.absoluteFilePath(m);
+                    gefunden.chop(QStringLiteral("drucker.csv").size());
+                    break;
+                }
+            }
+            if (!gefunden.isEmpty() || !d.cdUp()) break;
         }
+        if (!gefunden.isEmpty()) break;
+    }
+    bool geladen = false;
+    if (!gefunden.isEmpty()) {
+        qDebug() << "Datenordner gefunden:" << gefunden;
+        geladen = w.ladeDatenordner(gefunden);
     }
     if (!geladen) {
         w.statusBar()->showMessage(
