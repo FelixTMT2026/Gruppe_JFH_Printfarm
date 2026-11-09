@@ -784,49 +784,49 @@
 <context>
     <name>PlotWidget</name>
     <message>
-        <location filename="../src/plotwidget.cpp" line="139"/>
+        <location filename="../src/plotwidget.cpp" line="120"/>
         <source>Düsentemperatur</source>
         <translation>Nozzle temperature</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="140"/>
+        <location filename="../src/plotwidget.cpp" line="121"/>
         <source>Betttemperatur</source>
         <translation>Bed temperature</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="21"/>
+        <location filename="../src/plotwidget.cpp" line="20"/>
         <source>Adaptiv</source>
         <translation>Adaptive</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="23"/>
-        <source>Adaptive Auflösung (LTTB) umschalten</source>
-        <translation>Toggle adaptive resolution (LTTB)</translation>
+        <location filename="../src/plotwidget.cpp" line="22"/>
+        <source>Adaptive X-Achsen-Skalierung umschalten</source>
+        <translation>Toggle adaptive x-axis scaling</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="112"/>
+        <location filename="../src/plotwidget.cpp" line="93"/>
         <source>Pause</source>
         <translation>Pause</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="113"/>
+        <location filename="../src/plotwidget.cpp" line="94"/>
         <source>Fortsetzen</source>
         <translation>Resume</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="114"/>
+        <location filename="../src/plotwidget.cpp" line="95"/>
         <source>Abbruch</source>
         <translation>Abort</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="158"/>
-        <location filename="../src/plotwidget.cpp" line="190"/>
+        <location filename="../src/plotwidget.cpp" line="153"/>
+        <location filename="../src/plotwidget.cpp" line="197"/>
         <source>Zeit [min]</source>
         <translation>Time [min]</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="163"/>
-        <location filename="../src/plotwidget.cpp" line="195"/>
+        <location filename="../src/plotwidget.cpp" line="166"/>
+        <location filename="../src/plotwidget.cpp" line="202"/>
         <source>Temperatur [°C]</source>
         <translation>Temperature [°C]</translation>
     </message>

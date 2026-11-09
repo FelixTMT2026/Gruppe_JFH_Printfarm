@@ -33,6 +33,6 @@ private:
     QVector<QPair<double, QString>> m_events; // (Zeit in min, Name)
     double m_maxTemp = 250.0;
     bool m_rohdaten = false;
-    bool m_adaptiv = true;   // Toggle: adaptive (LTTB) vs. Standard (alle Punkte)
+    bool m_adaptiv = true;   // Toggle: adaptive X-Achsen-Skalierung vs. lineare Zeit
     class QCheckBox *m_adaptivBox = nullptr;
 };

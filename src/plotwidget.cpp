@@ -16,10 +16,10 @@ PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
     setDarkMode(qApp->palette().color(QPalette::Window).lightness() < 128);
     setRenderHint(QPainter::Antialiasing);
 
-    // Toggle oben rechts: adaptiv (LTTB-Decimation) vs. Standard (alle Punkte)
+    // Toggle oben rechts: adaptiv (X-Achsen-Skalierung) vs. Standard (lineare Zeit)
     m_adaptivBox = new QCheckBox(tr("Adaptiv"), this);
     m_adaptivBox->setChecked(true);
-    m_adaptivBox->setToolTip(tr("Adaptive Auflösung (LTTB) umschalten"));
+    m_adaptivBox->setToolTip(tr("Adaptive X-Achsen-Skalierung umschalten"));
     connect(m_adaptivBox, &QCheckBox::toggled, this, [this](bool on) {
         m_adaptiv = on;
         render();
