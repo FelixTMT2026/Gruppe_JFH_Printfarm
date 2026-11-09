@@ -23,7 +23,8 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
     setWindowTitle(tr("PrintFarm — Monitoring der 3D-Druckerfarm"));
-    resize(1200, 800);
+    setMinimumSize(960, 640);
+    resize(1280, 840);
 
     m_store = new DataStore(this);
     m_loader = new ProtocolLoader(this);

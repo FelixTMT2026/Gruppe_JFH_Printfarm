@@ -142,6 +142,7 @@ void DruckerDetailDialog::zeigeAuftrag(const Auftrag &a)
 
 // ---------------------------------------------------------------- DruckerEditDialog
 DruckerEditDialog::DruckerEditDialog(const Drucker &d, QWidget *parent) : QDialog(parent)
+    , m_druckerId(d.druckerId)
 {
     setWindowTitle(tr("Stammdaten bearbeiten: %1").arg(d.druckerId));
     auto *form = new QFormLayout(this);
@@ -167,7 +168,7 @@ DruckerEditDialog::DruckerEditDialog(const Drucker &d, QWidget *parent) : QDialo
 Drucker DruckerEditDialog::ergebnis() const
 {
     Drucker d;
-    d.druckerId = windowTitle().section(' ', 1); // wird vom Aufrufer überschrieben
+    d.druckerId = m_druckerId;
     d.standort = m_standort->text().trimmed();
     d.status = m_status->currentText();
     d.pidKp = m_kp->text().toDouble();

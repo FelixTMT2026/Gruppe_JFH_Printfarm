@@ -10,6 +10,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSet>
 
 DruckerWidget::DruckerWidget(DataStore *store, ProtocolLoader *loader, QWidget *parent)
     : QWidget(parent), m_store(store), m_loader(loader)
@@ -19,10 +20,22 @@ DruckerWidget::DruckerWidget(DataStore *store, ProtocolLoader *loader, QWidget *
     auto *filter = new QHBoxLayout();
     m_suche = new QLineEdit(this);
     m_suche->setPlaceholderText(tr("Suche nach ID, Modell, Standort..."));
+    m_suche->setClearButtonEnabled(true);   // schnelles Leeren der Suche
     m_statusFilter = new QComboBox(this);
     m_statusFilter->addItem(tr("Alle Status"), QString());
     m_statusFilter->addItems({QStringLiteral("bereit"), QStringLiteral("druckt"),
                               QStringLiteral("wartung"), QStringLiteral("defekt")});
+    // zusätzliche, in den Daten vorkommende Status (z. B. „kaputt“, leer) aufnehmen
+    connect(store, &DataStore::datenGeladen, this, [this, store]() {
+        for (const auto &d : store->drucker()) {
+            if (d.status.isEmpty()) continue;
+            bool bekannt = false;
+            for (int i = 0; i < m_statusFilter->count(); ++i)
+                if (m_statusFilter->itemData(i).toString() == d.status) bekannt = true;
+            if (!bekannt)
+                m_statusFilter->addItem(QStringLiteral("Status: %1").arg(d.status), d.status);
+        }
+    });
     m_kinematikFilter = new QComboBox(this);
     m_kinematikFilter->addItem(tr("Alle Kinematiken"), QString());
     m_kinematikFilter->addItems({QStringLiteral("kartesisch"), QStringLiteral("corexy"),

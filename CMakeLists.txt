@@ -22,6 +22,7 @@ qt_add_executable(Gruppe_JFH_Printfarm
     src/analyse.h          src/analyse.cpp
     src/auth.h             src/auth.cpp
     src/plotwidget.h       src/plotwidget.cpp
+    src/ganttwidget.h      src/ganttwidget.cpp
     src/tablemodels.h      src/tablemodels.cpp
     src/dialogs.h          src/dialogs.cpp
     src/druckerwidget.h    src/druckerwidget.cpp

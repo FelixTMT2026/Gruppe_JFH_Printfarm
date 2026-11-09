@@ -12,6 +12,8 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     bool ladeDatenordner(const QString &folder);
+    DataStore *store() const { return m_store; }
+    ProtocolLoader *loader() const { return m_loader; }
 private:
     void bauUI();
     void menuesErzeugen();

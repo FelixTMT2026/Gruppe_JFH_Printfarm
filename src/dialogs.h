@@ -46,6 +46,7 @@ public:
     DruckerEditDialog(const Drucker &d, QWidget *parent = nullptr);
     Drucker ergebnis() const;
 private:
+    QString m_druckerId;
     QLineEdit *m_standort;
     QComboBox *m_status;
     QLineEdit *m_kp, *m_ki, *m_kd;

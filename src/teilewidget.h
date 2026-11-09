@@ -6,6 +6,7 @@
 #include "datastore.h"
 #include "protocol.h"
 #include "tablemodels.h"
+#include "analyse.h"
 #include <QWidget>
 
 class TeileWidget : public QWidget {
@@ -28,4 +29,7 @@ private:
     class QLabel *m_kosten;
     class QTableView *m_ganttView;
     class AuftragModel *m_ganttModel;
+    class GanttWidget *m_ganttPlot;
+    QString m_aktuellerAuftrag;
+    QList<Planung::Zuweisung> m_letztePlanung;
 };

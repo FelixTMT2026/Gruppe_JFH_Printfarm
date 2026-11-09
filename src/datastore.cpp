@@ -1,5 +1,6 @@
 #include "datastore.h"
 #include "csvio.h"
+#include <QSet>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
@@ -166,7 +167,13 @@ bool DataStore::loadWartungen(const QString &path)
 void DataStore::plausibilitaet()
 {
     int fehler = 0;
+    const QSet<QString> erlaubtStatus = {QStringLiteral("bereit"), QStringLiteral("druckt"),
+                                          QStringLiteral("wartung"), QStringLiteral("defekt")};
     for (const auto &d : m_drucker) {
+        if (!erlaubtStatus.contains(d.status))
+            addLog(LogEintrag::Validierung,
+                   QStringLiteral("Drucker %1 hat ungültigen Status „%2“ (erlaubt: bereit/druckt/wartung/defekt)")
+                       .arg(d.druckerId, d.status.isEmpty() ? QStringLiteral("(leer)") : d.status));
         if (!m_modellMap.contains(d.modellId)) {
             addLog(LogEintrag::Validierung,
                    QStringLiteral("Drucker %1 verweist auf unbekanntes Modell %2").arg(d.druckerId, d.modellId));

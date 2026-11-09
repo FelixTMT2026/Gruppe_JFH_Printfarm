@@ -1,5 +1,6 @@
 #include "tablemodels.h"
 #include "csvio.h"
+#include <QColor>
 
 // ---------------------------------------------------------------- DruckerModel
 DruckerModel::DruckerModel(const DataStore *store, QObject *parent)
@@ -50,9 +51,37 @@ QVariant DruckerModel::data(const QModelIndex &i, int role) const
         case ColStatus: return d->status;
         }
     }
+    if (role == Qt::ForegroundRole && i.column() == ColStatus) {
+        // Status farbcodieren für schnelle Erfassung
+        if (d->status == QLatin1String("defekt") || d->status == QLatin1String("kaputt"))
+            return QColor(200, 30, 30);
+        if (d->status.isEmpty()) return QColor(110, 110, 110);
+        if (d->status == QLatin1String("wartung")) return QColor(200, 130, 0);
+        if (d->status == QLatin1String("druckt")) return QColor(0, 90, 200);
+        if (d->status == QLatin1String("bereit")) return QColor(0, 140, 60);
+    }
     if (role == Qt::ToolTipRole)
         return tr("Doppelklick für Details: %1").arg(d->druckerId);
     return {};
+}
+
+void DruckerModel::sort(int column, Qt::SortOrder order)
+{
+    beginResetModel();
+    std::sort(m_rows.begin(), m_rows.end(), [this, column, order](const Drucker *a, const Drucker *b) {
+        const Modell *ma = m_store->modell(a->modellId), *mb = m_store->modell(b->modellId);
+        bool less;
+        switch (column) {
+        case ColId: less = a->druckerId < b->druckerId; break;
+        case ColModell: less = (ma ? ma->bezeichnung : QString()) < (mb ? mb->bezeichnung : QString()); break;
+        case ColStandort: less = a->standort < b->standort; break;
+        case ColBetriebsstunden: less = a->betriebsstunden < b->betriebsstunden; break;
+        case ColStatus: less = a->status < b->status; break;
+        default: less = a->druckerId < b->druckerId;
+        }
+        return order == Qt::AscendingOrder ? less : !less;
+    });
+    endResetModel();
 }
 
 QVariant DruckerModel::headerData(int s, Qt::Orientation o, int role) const
@@ -113,6 +142,12 @@ QVariant AuftragModel::data(const QModelIndex &i, int role) const
         case ColFehler: return a->fehlercode;
         }
     }
+    if (role == Qt::ForegroundRole && i.column() == ColErgebnis) {
+        if (a->ergebnis == QLatin1String("erfolgreich")) return QColor(0, 140, 60);
+        if (a->ergebnis == QLatin1String("fehlgeschlagen")) return QColor(200, 30, 30);
+        if (a->ergebnis == QLatin1String("abgebrochen")) return QColor(200, 130, 0);
+        if (a->ergebnis == QLatin1String("ausstehend")) return QColor(110, 110, 110);
+    }
     if (role == Qt::ToolTipRole)
         return tr("Doppelklick für Verlauf und Auswertung: %1").arg(a->auftragId);
     return {};
@@ -131,6 +166,26 @@ QVariant AuftragModel::headerData(int s, Qt::Orientation o, int role) const
     case ColFehler: return tr("Fehlercode");
     }
     return {};
+}
+
+void AuftragModel::sort(int column, Qt::SortOrder order)
+{
+    beginResetModel();
+    std::sort(m_rows.begin(), m_rows.end(), [column, order](const Auftrag *a, const Auftrag *b) {
+        bool less;
+        switch (column) {
+        case ColId: less = a->auftragId < b->auftragId; break;
+        case ColDrucker: less = a->druckerId < b->druckerId; break;
+        case ColBauteil: less = a->bauteil < b->bauteil; break;
+        case ColStart: less = a->start < b->start; break;
+        case ColDauer: less = a->dauerSollMin < b->dauerSollMin; break;
+        case ColErgebnis: less = a->ergebnis < b->ergebnis; break;
+        case ColFehler: less = a->fehlercode < b->fehlercode; break;
+        default: less = a->auftragId < b->auftragId;
+        }
+        return order == Qt::AscendingOrder ? less : !less;
+    });
+    endResetModel();
 }
 
 // ---------------------------------------------------------------- MaterialModel

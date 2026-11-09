@@ -1,5 +1,6 @@
 #include "teilewidget.h"
 #include "plotwidget.h"
+#include "ganttwidget.h"
 #include "regelguete.h"
 #include "analyse.h"
 #include "csvio.h"
@@ -17,13 +18,14 @@
 #include <QMessageBox>
 
 TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *parent)
-    : QWidget(parent), m_store(store), m_loader(loader)
+    : QWidget(parent), m_store(store), m_loader(loader), m_aktuellerAuftrag(QString())
 {
     auto *layout = new QVBoxLayout(this);
 
     auto *filter = new QHBoxLayout();
     m_suche = new QLineEdit(this);
     m_suche->setPlaceholderText(tr("Suche nach Auftrag, Drucker, Bauteil..."));
+    m_suche->setClearButtonEnabled(true);
     m_ergebnisFilter = new QComboBox(this);
     m_ergebnisFilter->addItem(tr("Alle Ergebnisse"), QString());
     m_ergebnisFilter->addItems({QStringLiteral("erfolgreich"), QStringLiteral("abgebrochen"),
@@ -60,10 +62,14 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
 
     auto *ganttBox = new QGroupBox(tr("Belegungsplan (Gantt) — geplante Aufträge"), this);
     auto *gl = new QVBoxLayout(ganttBox);
+    m_ganttPlot = new GanttWidget(ganttBox);
+    m_ganttPlot->leeren();
+    gl->addWidget(m_ganttPlot);
     m_ganttModel = new AuftragModel(store, ganttBox);
     connect(store, &DataStore::datenGeladen, m_ganttModel, &AuftragModel::refresh);
     m_ganttView = new QTableView(ganttBox);
     m_ganttView->setModel(m_ganttModel);
+    m_ganttView->setMaximumHeight(140);
     m_ganttView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     gl->addWidget(m_ganttView);
     layout->addWidget(ganttBox);
@@ -80,6 +86,13 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     connect(planBtn, &QPushButton::clicked, this, &TeileWidget::planeAuftraege);
     connect(m_loader, &ProtocolLoader::fertig, this, [this](const QString &id) {
         emit statusMeldung(tr("Protokoll %1 im Hintergrund geladen (Cache).").arg(id));
+        // wenn das gerade der angezeigte Auftrag ist: Ansicht aktualisieren
+        if (id == m_aktuellerAuftrag) {
+            auto *tabs = findChild<QTabWidget*>();
+            Q_UNUSED(tabs);
+            for (const auto &a : m_store->auftraege())
+                if (a.auftragId == id) { zeigeAuftrag(a); break; }
+        }
     });
     connect(m_loader, &ProtocolLoader::fehler, this, [this](const QString &id, const QString &f) {
         m_store->addLog(LogEintrag::Protokoll, f, id);
@@ -90,6 +103,7 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
 
 void TeileWidget::zeigeAuftrag(const Auftrag &a)
 {
+    m_aktuellerAuftrag = a.auftragId;
     const Material *mat = m_store->material(a.materialId);
     m_info->setText(tr("<b>%1</b> — %2 auf %3 | Material: %4 | Soll: %5 min, %6 g | Ergebnis: %7%8")
         .arg(a.auftragId, a.bauteil, a.druckerId, mat ? mat->bezeichnung : a.materialId)
@@ -144,10 +158,15 @@ void TeileWidget::planeAuftraege()
             ausstehend.append(a);
     const auto zuweisungen = Planung::greedy(ausstehend, m_store->drucker(), *m_store,
                                              QDateTime::currentDateTime());
+    m_letztePlanung = zuweisungen;
     m_ganttModel->resetFilter();
     m_ganttModel->setFilter({}, QStringLiteral("ausstehend"));
+    QStringList druckerIds;
+    for (const auto &z : zuweisungen)
+        if (!druckerIds.contains(z.druckerId)) druckerIds.append(z.druckerId);
+    m_ganttPlot->setPlanung(zuweisungen, druckerIds);
     m_store->addLog(LogEintrag::System,
         tr("Greedy-Planung: %1 geplante Aufträge auf %2 Zuweisungen verteilt")
             .arg(ausstehend.size()).arg(zuweisungen.size()));
-    emit statusMeldung(tr("Planung: %1 Zuweisungen (siehe Gantt-Liste).").arg(zuweisungen.size()));
+    emit statusMeldung(tr("Planung: %1 Zuweisungen (siehe Gantt-Diagramm).").arg(zuweisungen.size()));
 }

@@ -45,5 +45,4 @@ private:
     QList<QString> m_lru;
     QHash<QString, std::shared_ptr<Protokoll>> m_cache;
     static constexpr int kCacheSize = 20;
-    QFutureWatcher<Protokoll> m_watcher;
 };

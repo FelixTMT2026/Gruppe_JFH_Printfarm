@@ -14,6 +14,7 @@ public:
     int columnCount(const QModelIndex &p = {}) const override;
     QVariant data(const QModelIndex &i, int role) const override;
     QVariant headerData(int s, Qt::Orientation o, int role) const override;
+    void sort(int column, Qt::SortOrder order) override;
     const Drucker *druckerAt(int row) const;
     void setFilter(const QString &text, const QString &statusFilter, const QString &kinematikFilter);
     void resetFilter();
@@ -34,6 +35,7 @@ public:
     int columnCount(const QModelIndex &p = {}) const override;
     QVariant data(const QModelIndex &i, int role) const override;
     QVariant headerData(int s, Qt::Orientation o, int role) const override;
+    void sort(int column, Qt::SortOrder order) override;
     const Auftrag *auftragAt(int row) const;
     void setFilter(const QString &text, const QString &ergebnisFilter); // text: id/drucker/bauteil
     void setNurDrucker(const QString &druckerId);   // leer = alle

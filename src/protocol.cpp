@@ -6,18 +6,7 @@
 #include <QJsonArray>
 #include <QtConcurrent/QtConcurrent>
 
-ProtocolLoader::ProtocolLoader(QObject *parent) : QObject(parent)
-{
-    connect(&m_watcher, &QFutureWatcher<Protokoll>::finished, this, [this]() {
-        const Protokoll p = m_watcher.result();
-        if (p.valid) {
-            cachePut(p.auftragId, p);
-            emit fertig(p.auftragId);
-        } else {
-            emit fehler(p.auftragId, p.fehler);
-        }
-    });
-}
+ProtocolLoader::ProtocolLoader(QObject *parent) : QObject(parent) {}
 
 int ProtocolLoader::loadIndex(const QString &dataFolder)
 {
@@ -153,7 +142,20 @@ void ProtocolLoader::loadAsync(const QString &auftragId)
     }
     const QString dataFolder = m_dataFolder;
     const QString rel = m_index.value(auftragId);
-    m_watcher.setFuture(QtConcurrent::run([this, dataFolder, rel, auftragId]() {
+    // pro Anfrage ein eigener Watcher, damit parallele Anforderungen nicht
+    // kollidieren; Ergebnis landet thread-sicher im Cache (GUI-Thread via Signal)
+    auto *watcher = new QFutureWatcher<Protokoll>(this);
+    connect(watcher, &QFutureWatcher<Protokoll>::finished, this, [this, watcher, auftragId]() {
+        const Protokoll p = watcher->result();
+        watcher->deleteLater();
+        if (p.valid) {
+            cachePut(p.auftragId, p);
+            emit fertig(p.auftragId);
+        } else {
+            emit fehler(p.auftragId, p.fehler);
+        }
+    });
+    watcher->setFuture(QtConcurrent::run([this, dataFolder, rel, auftragId]() {
         if (rel.isEmpty()) {
             Protokoll p;
             p.auftragId = auftragId;
