@@ -68,18 +68,20 @@ QVariant DruckerModel::data(const QModelIndex &i, int role) const
 void DruckerModel::sort(int column, Qt::SortOrder order)
 {
     beginResetModel();
+    // korrekte strikte schwache Ordnung: bei Gleichheit weder < noch > zurückgeben,
+    // sonst Absturz in std::sort (besonders bei absteigender Sortierung mit Duplikaten)
     std::sort(m_rows.begin(), m_rows.end(), [this, column, order](const Drucker *a, const Drucker *b) {
         const Modell *ma = m_store->modell(a->modellId), *mb = m_store->modell(b->modellId);
-        bool less;
+        int cmp = 0;
         switch (column) {
-        case ColId: less = a->druckerId < b->druckerId; break;
-        case ColModell: less = (ma ? ma->bezeichnung : QString()) < (mb ? mb->bezeichnung : QString()); break;
-        case ColStandort: less = a->standort < b->standort; break;
-        case ColBetriebsstunden: less = a->betriebsstunden < b->betriebsstunden; break;
-        case ColStatus: less = a->status < b->status; break;
-        default: less = a->druckerId < b->druckerId;
+        case ColId: cmp = a->druckerId.compare(b->druckerId); break;
+        case ColModell: cmp = (ma ? ma->bezeichnung : QString()).compare(mb ? mb->bezeichnung : QString()); break;
+        case ColStandort: cmp = a->standort.compare(b->standort); break;
+        case ColBetriebsstunden: cmp = (a->betriebsstunden < b->betriebsstunden) ? -1 : (a->betriebsstunden > b->betriebsstunden) ? 1 : 0; break;
+        case ColStatus: cmp = a->status.compare(b->status); break;
+        default: cmp = a->druckerId.compare(b->druckerId);
         }
-        return order == Qt::AscendingOrder ? less : !less;
+        return order == Qt::AscendingOrder ? cmp < 0 : cmp > 0;
     });
     endResetModel();
 }
@@ -171,19 +173,20 @@ QVariant AuftragModel::headerData(int s, Qt::Orientation o, int role) const
 void AuftragModel::sort(int column, Qt::SortOrder order)
 {
     beginResetModel();
+    // siehe DruckerModel::sort: Gleichheit korrekt behandeln (cmp == 0 -> false)
     std::sort(m_rows.begin(), m_rows.end(), [column, order](const Auftrag *a, const Auftrag *b) {
-        bool less;
+        int cmp = 0;
         switch (column) {
-        case ColId: less = a->auftragId < b->auftragId; break;
-        case ColDrucker: less = a->druckerId < b->druckerId; break;
-        case ColBauteil: less = a->bauteil < b->bauteil; break;
-        case ColStart: less = a->start < b->start; break;
-        case ColDauer: less = a->dauerSollMin < b->dauerSollMin; break;
-        case ColErgebnis: less = a->ergebnis < b->ergebnis; break;
-        case ColFehler: less = a->fehlercode < b->fehlercode; break;
-        default: less = a->auftragId < b->auftragId;
+        case ColId: cmp = a->auftragId.compare(b->auftragId); break;
+        case ColDrucker: cmp = a->druckerId.compare(b->druckerId); break;
+        case ColBauteil: cmp = a->bauteil.compare(b->bauteil); break;
+        case ColStart: cmp = (a->start < b->start) ? -1 : (a->start > b->start) ? 1 : 0; break;
+        case ColDauer: cmp = (a->dauerSollMin < b->dauerSollMin) ? -1 : (a->dauerSollMin > b->dauerSollMin) ? 1 : 0; break;
+        case ColErgebnis: cmp = a->ergebnis.compare(b->ergebnis); break;
+        case ColFehler: cmp = a->fehlercode.compare(b->fehlercode); break;
+        default: cmp = a->auftragId.compare(b->auftragId);
         }
-        return order == Qt::AscendingOrder ? less : !less;
+        return order == Qt::AscendingOrder ? cmp < 0 : cmp > 0;
     });
     endResetModel();
 }

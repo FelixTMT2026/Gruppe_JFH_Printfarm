@@ -38,6 +38,7 @@ private slots:
     void ganttLaesstSichZeichnen();
     void themeFarbenBeiderModi();
     void tabBleibtNachUiNeuaufbauErhalten();
+    void sortierungMitDuplikatenCrashfrei();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -320,6 +321,31 @@ void TestGui::tabBleibtNachUiNeuaufbauErhalten()
     QVERIFY(tabs);
     QCOMPARE(tabs->currentIndex(), 3);   // gleicher Tab wie vorher
     tabs->setCurrentIndex(0);
+}
+
+void TestGui::sortierungMitDuplikatenCrashfrei()
+{
+    // Regression: Sortieren nach Status (74x "bereit" = Duplikate) darf nicht
+    // crashen, weder auf- noch absteigend; danach müssen die Werte sortiert sein.
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *view = tabs->widget(0)->findChild<QTableView*>();
+    auto *model = static_cast<DruckerModel*>(view->model());
+    model->sort(4, Qt::AscendingOrder);    // Status aufsteigend
+    for (int i = 1; i < model->rowCount(); ++i)
+        QVERIFY(model->data(model->index(i - 1, 4), Qt::DisplayRole).toString() <= model->data(model->index(i, 4), Qt::DisplayRole).toString());
+    model->sort(4, Qt::DescendingOrder);   // umkehren -> früher Crash
+    for (int i = 1; i < model->rowCount(); ++i)
+        QVERIFY(model->data(model->index(i - 1, 4), Qt::DisplayRole).toString() >= model->data(model->index(i, 4), Qt::DisplayRole).toString());
+    model->sort(0, Qt::AscendingOrder);
+
+    // ebenso Auftragsliste nach Ergebnis (viele Duplikate) in beide Richtungen
+    auto *view1 = tabs->widget(1)->findChild<QTableView*>();
+    auto *amodel = static_cast<AuftragModel*>(view1->model());
+    amodel->sort(5, Qt::AscendingOrder);
+    amodel->sort(5, Qt::DescendingOrder);
+    for (int i = 1; i < amodel->rowCount(); ++i)
+        QVERIFY(amodel->data(amodel->index(i - 1, 5), Qt::DisplayRole).toString() >= amodel->data(amodel->index(i, 5), Qt::DisplayRole).toString());
+    amodel->sort(0, Qt::AscendingOrder);
 }
 
 QTEST_MAIN(TestGui)
