@@ -53,6 +53,7 @@ private slots:
     void plotLegendeUebersetzt();
     void singleClickAktualisiertProtokoll();
     void lttbAdaptiv();
+    void resizeDecimiertAdaptiv();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -614,6 +615,40 @@ void TestGui::lttbAdaptiv()
     // klein genug -> unverändert
     QVector<QPointF> klein = {{0, 0}, {1, 1}, {2, 0}};
     QCOMPARE(PlotWidget::lttb(klein, 200).size(), 3);
+}
+
+void TestGui::resizeDecimiertAdaptiv()
+{
+    // Plot mit Rohdaten füllen, dann Breite ändern -> Punktzahl der Serie folgt der Breite
+    PlotWidget plot;
+    Protokoll p;
+    p.auftragId = "JT";
+    p.dueseSollC = 210;
+    for (int i = 0; i < 3000; ++i) {
+        Messpunkt m; m.zeitS = i; m.dueseIstC = 100 + (i % 50); m.bettIstC = 60;
+        p.aufheizen.append(m);
+    }
+    plot.resize(1200, 400);
+    plot.show();   // sichtbar, damit resizeEvent geliefert wird
+    QTest::qWait(20);
+    plot.zeigeProtokoll(p);
+    auto countFor = [&]() {
+        int n = 0;
+        for (auto *s : plot.chart()->series())
+            if (s->name() == QString::fromUtf8("Düsentemperatur"))
+                n = static_cast<QLineSeries*>(s)->points().size();
+        return n;
+    };
+    const int gross = countFor();
+    plot.resize(300, 400);   // klein skalieren
+    QTest::qWait(20);
+    const int klein = countFor();
+    QVERIFY(gross > 0);
+    QVERIFY(klein > 0);
+    QVERIFY(klein < gross);   // schmaler -> weniger Punkte (adaptiv)
+    plot.resize(1200, 400);  // groß skalieren
+    QTest::qWait(20);
+    QVERIFY(countFor() > klein);   // breiter -> wieder mehr Detail
 }
 
 QTEST_MAIN(TestGui)

@@ -62,56 +62,78 @@ void PlotWidget::leeren()
 {
     chart()->removeAllSeries();
     m_auftragId.clear();
+    m_rohdaten = false;
+    m_duesePts.clear();
+    m_bettPts.clear();
+    m_events.clear();
+}
+
+void PlotWidget::resizeEvent(QResizeEvent *e)
+{
+    QChartView::resizeEvent(e);
+    if (m_rohdaten)
+        render();   // bei Skalierung mit neuer Breite adaptiv neu decimieren
 }
 
 void PlotWidget::zeigeProtokoll(const Protokoll &p)
 {
-    chart()->removeAllSeries();
-    chart()->setTitle(QString());   // keine Überschrift
+    // Rohdaten (Zeit in Minuten) merken — das eigentliche Zeichnen macht render(),
+    // das bei jeder Größenänderung mit der aktuellen Breite neu decimiert.
     m_auftragId = p.auftragId;
+    m_duesePts.clear();
+    m_bettPts.clear();
+    m_events.clear();
+    for (const auto &m : p.aufheizen) {
+        m_duesePts.append({m.zeitS / 60.0, m.dueseIstC});
+        m_bettPts.append({m.zeitS / 60.0, m.bettIstC});
+    }
+    for (const auto &m : p.druck) {
+        m_duesePts.append({m.zeitS / 60.0, m.dueseIstC});
+        m_bettPts.append({m.zeitS / 60.0, m.bettIstC});
+    }
+    double maxTemp = p.dueseSollC;
+    for (const auto &ev : p.ereignisse) {
+        if (ev.typ == QLatin1String("pause") || ev.typ == QLatin1String("fortsetzen") ||
+            ev.typ == QLatin1String("abbruch")) {
+            QString evName;
+            if (ev.typ == QLatin1String("pause")) evName = tr("Pause");
+            else if (ev.typ == QLatin1String("fortsetzen")) evName = tr("Fortsetzen");
+            else evName = tr("Abbruch");
+            m_events.append({ev.zeitS / 60.0, evName});
+        }
+    }
+    for (const auto &pt : m_duesePts) maxTemp = qMax(maxTemp, pt.y());
+    m_maxTemp = qMax(maxTemp, 250.0);
+    m_rohdaten = true;
+    render();
+}
 
+void PlotWidget::render()
+{
+    chart()->removeAllSeries();
+    chart()->setTitle(QString());
+    if (!m_rohdaten)
+        return;
     auto mk = [](const QString &name, const QColor &c) {
         auto *s = new QLineSeries();
         s->setName(name);
         s->setColor(c);
         return s;
     };
-    // nur echte Messdaten: Düsentemperatur und Betttemperatur über die ganze Zeit
+    // adaptiv für die visuelle Skalierung: Schwelle = aktuelle Plot-Breite (~1 Punkt/Pixel)
+    const int schwelle = qMax(200, width());
     auto *sDuese = mk(tr("Düsentemperatur"), QColor(214, 69, 49));
     auto *sBett = mk(tr("Betttemperatur"), QColor(41, 128, 185));
-
-    // Zeitachse in Minuten (Protokoll intern in Sekunden); adaptive Auflösung:
-    // LTTB behält an Sprüngen/Schwankungen die Detailpunkte, streicht stabile Phasen
-    QVector<QPointF> duesePts, bettPts;
-    for (const auto &m : p.aufheizen) {
-        duesePts.append({m.zeitS / 60.0, m.dueseIstC});
-        bettPts.append({m.zeitS / 60.0, m.bettIstC});
-    }
-    for (const auto &m : p.druck) {
-        duesePts.append({m.zeitS / 60.0, m.dueseIstC});
-        bettPts.append({m.zeitS / 60.0, m.bettIstC});
-    }
-    const int schwelle = qMax(200, width());   // ca. ein Punkt pro Pixel
-    for (const auto &pt : lttb(duesePts, schwelle))
+    for (const auto &pt : lttb(m_duesePts, schwelle))
         sDuese->append(pt);
-    for (const auto &pt : lttb(bettPts, schwelle))
+    for (const auto &pt : lttb(m_bettPts, schwelle))
         sBett->append(pt);
-    // Ereignis-Markierungen als senkrechte Linien (nur Pause/Abbruch, nicht Start/Ende)
-    for (const auto &ev : p.ereignisse) {
-        if (ev.typ == QLatin1String("pause") || ev.typ == QLatin1String("fortsetzen") ||
-            ev.typ == QLatin1String("abbruch")) {
-            QString evName;
-            if (ev.typ == QLatin1String("druck_start")) evName = tr("Druckstart");
-            else if (ev.typ == QLatin1String("pause")) evName = tr("Pause");
-            else if (ev.typ == QLatin1String("fortsetzen")) evName = tr("Fortsetzen");
-            else if (ev.typ == QLatin1String("abbruch")) evName = tr("Abbruch");
-            else evName = tr("Druckende");
-            auto *s = mk(evName, Qt::gray);
-            s->append(ev.zeitS / 60.0, 0);
-            s->append(ev.zeitS / 60.0, qMax(p.dueseSollC, 250.0));
-            s->setPen(QPen(Qt::gray, 0, Qt::DashLine));
-            chart()->addSeries(s);
-        }
+    for (const auto &ev : m_events) {
+        auto *s = mk(ev.second, Qt::gray);
+        s->append(ev.first, 0);
+        s->append(ev.first, m_maxTemp);
+        s->setPen(QPen(Qt::gray, 0, Qt::DashLine));
+        chart()->addSeries(s);
     }
     chart()->addSeries(sDuese);
     chart()->addSeries(sBett);

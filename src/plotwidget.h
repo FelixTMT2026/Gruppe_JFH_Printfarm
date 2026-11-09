@@ -22,6 +22,13 @@ public:
     // Adaptives Downsampling (LTTB): behält an stark veränderlichen Stellen viele
     // Punkte, reduziert stabile Bereiche auf wenige. Endpunkte bleiben erhalten.
     static QVector<QPointF> lttb(const QVector<QPointF> &points, int threshold);
+protected:
+    void resizeEvent(QResizeEvent *e) override;   // bei Skalierung neu decimieren
 private:
+    void render();   // zeichnet Rohdaten mit aktueller Breite adaptiv
     QString m_auftragId;
+    QVector<QPointF> m_duesePts, m_bettPts;   // Rohdaten (Zeit in min)
+    QVector<QPair<double, QString>> m_events; // (Zeit in min, Name)
+    double m_maxTemp = 250.0;
+    bool m_rohdaten = false;
 };
