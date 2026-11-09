@@ -23,6 +23,7 @@
 #include <QValueAxis>
 #include <QLocale>
 #include <QStyledItemDelegate>
+#include <QLineSeries>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -49,6 +50,7 @@ private slots:
     void belegungsplanNurFuerAdmin();
     void dezimalpunktIstPunkt();
     void spracheUmschaltungKomplett();
+    void plotLegendeUebersetzt();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -496,6 +498,55 @@ void TestGui::spracheUmschaltungKomplett()
     sprachAktion()->trigger();
     tabs = w->findChild<QTabWidget*>();
     QCOMPARE(tabs->tabText(0), QString::fromUtf8("Druckerliste"));
+}
+
+void TestGui::plotLegendeUebersetzt()
+{
+    // Protokoll zeichnen und Legenden-Namen prüfen (Deutsch), dann Englisch
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab1 = tabs->widget(1);
+    auto *plot = tab1->findChild<PlotWidget*>();
+    QVERIFY(plot);
+    auto *view = tab1->findChild<QTableView*>();
+    auto *model = static_cast<AuftragModel*>(view->model());
+    for (int i = 0; i < model->rowCount(); ++i) {
+        const auto *a = model->auftragAt(i);
+        if (a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+            emit view->doubleClicked(model->index(i, 0));
+            break;
+        }
+    }
+    QTest::qWait(30);
+    QStringList names;
+    for (auto *s : plot->chart()->series())
+        names << s->name();
+    QVERIFY(names.contains(QString::fromUtf8("Düse Ist (Druck)")));
+    QVERIFY(names.contains(QString::fromUtf8("Bett Ist (Aufheizen)")));
+    QVERIFY(names.contains(QString::fromUtf8("Druckstart")));
+
+    // Englisch umschalten -> Legende übersetzt
+    if (tabs->tabText(0) != QStringLiteral("Printers"))
+        w->menuBar()->actions().at(1)->menu()->actions().last()->trigger();
+    tabs = w->findChild<QTabWidget*>();
+    plot = tabs->widget(1)->findChild<PlotWidget*>();
+    view = tabs->widget(1)->findChild<QTableView*>();
+    model = static_cast<AuftragModel*>(view->model());
+    for (int i = 0; i < model->rowCount(); ++i) {
+        const auto *a = model->auftragAt(i);
+        if (a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+            emit view->doubleClicked(model->index(i, 0));
+            break;
+        }
+    }
+    QTest::qWait(30);
+    names.clear();
+    for (auto *s : plot->chart()->series())
+        names << s->name();
+    QVERIFY(names.contains(QStringLiteral("Nozzle actual (print)")));
+    QVERIFY(names.contains(QStringLiteral("Bed actual (heat-up)")));
+    QVERIFY(names.contains(QStringLiteral("Print start")));
+    // zurück auf Deutsch
+    w->menuBar()->actions().at(1)->menu()->actions().last()->trigger();
 }
 
 QTEST_MAIN(TestGui)

@@ -800,18 +800,18 @@
     </message>
     <message>
         <location filename="../src/plotwidget.cpp" line="40"/>
-        <source>Düse Soll</source>
-        <translation>Nozzle target</translation>
+        <source>Düse Soll (Druck)</source>
+        <translation>Nozzle target (print)</translation>
     </message>
     <message>
         <location filename="../src/plotwidget.cpp" line="41"/>
-        <source>Düse Ist</source>
-        <translation>Nozzle actual</translation>
+        <source>Düse Ist (Druck)</source>
+        <translation>Nozzle actual (print)</translation>
     </message>
     <message>
         <location filename="../src/plotwidget.cpp" line="42"/>
-        <source>Bett Ist</source>
-        <translation>Bed actual</translation>
+        <source>Bett Ist (Druck)</source>
+        <translation>Bed actual (print)</translation>
     </message>
     <message>
         <location filename="../src/plotwidget.cpp" line="43"/>
@@ -824,19 +824,44 @@
         <translation>Bed actual (heat-up)</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="76"/>
-        <location filename="../src/plotwidget.cpp" line="99"/>
+        <location filename="../src/plotwidget.cpp" line="62"/>
+        <source>Druckstart</source>
+        <translation>Print start</translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="63"/>
+        <source>Pause</source>
+        <translation>Pause</translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="64"/>
+        <source>Fortsetzen</source>
+        <translation>Resume</translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="65"/>
+        <source>Abbruch</source>
+        <translation>Abort</translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="66"/>
+        <source>Druckende</source>
+        <translation>Print end</translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="82"/>
+        <location filename="../src/plotwidget.cpp" line="105"/>
         <source>Zeit [min]</source>
         <translation>Time [min]</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="78"/>
-        <location filename="../src/plotwidget.cpp" line="101"/>
+        <location filename="../src/plotwidget.cpp" line="84"/>
+        <location filename="../src/plotwidget.cpp" line="107"/>
         <source>Temperatur [°C]</source>
         <translation>Temperature [°C]</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="85"/>
+        <location filename="../src/plotwidget.cpp" line="91"/>
         <source>Vergleich Sprungantworten</source>
         <translation>Compare step responses</translation>
     </message>

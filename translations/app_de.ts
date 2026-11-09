@@ -800,17 +800,17 @@
     </message>
     <message>
         <location filename="../src/plotwidget.cpp" line="40"/>
-        <source>Düse Soll</source>
+        <source>Düse Soll (Druck)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/plotwidget.cpp" line="41"/>
-        <source>Düse Ist</source>
+        <source>Düse Ist (Druck)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/plotwidget.cpp" line="42"/>
-        <source>Bett Ist</source>
+        <source>Bett Ist (Druck)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -824,19 +824,44 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="76"/>
-        <location filename="../src/plotwidget.cpp" line="99"/>
+        <location filename="../src/plotwidget.cpp" line="62"/>
+        <source>Druckstart</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="63"/>
+        <source>Pause</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="64"/>
+        <source>Fortsetzen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="65"/>
+        <source>Abbruch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="66"/>
+        <source>Druckende</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="82"/>
+        <location filename="../src/plotwidget.cpp" line="105"/>
         <source>Zeit [min]</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="78"/>
-        <location filename="../src/plotwidget.cpp" line="101"/>
+        <location filename="../src/plotwidget.cpp" line="84"/>
+        <location filename="../src/plotwidget.cpp" line="107"/>
         <source>Temperatur [°C]</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="85"/>
+        <location filename="../src/plotwidget.cpp" line="91"/>
         <source>Vergleich Sprungantworten</source>
         <translation type="unfinished"></translation>
     </message>

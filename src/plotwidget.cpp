@@ -37,9 +37,9 @@ void PlotWidget::zeigeProtokoll(const Protokoll &p)
         s->setColor(c);
         return s;
     };
-    auto *sSoll = mk(tr("Düse Soll"), Qt::red);
-    auto *sIst = mk(tr("Düse Ist"), Qt::darkRed);
-    auto *sBett = mk(tr("Bett Ist"), Qt::blue);
+    auto *sSoll = mk(tr("Düse Soll (Druck)"), Qt::red);
+    auto *sIst = mk(tr("Düse Ist (Druck)"), Qt::darkRed);
+    auto *sBett = mk(tr("Bett Ist (Druck)"), Qt::blue);
     auto *sIstAuf = mk(tr("Düse Ist (Aufheizen)"), QColor(255, 128, 0));
     auto *sBettAuf = mk(tr("Bett Ist (Aufheizen)"), QColor(0, 128, 255));
 
@@ -58,7 +58,13 @@ void PlotWidget::zeigeProtokoll(const Protokoll &p)
     for (const auto &ev : p.ereignisse) {
         if (ev.typ == QLatin1String("druck_start") || ev.typ == QLatin1String("pause") ||
             ev.typ == QLatin1String("druck_ende")) {
-            auto *s = mk(ev.typ, Qt::gray);
+            QString evName;
+            if (ev.typ == QLatin1String("druck_start")) evName = tr("Druckstart");
+            else if (ev.typ == QLatin1String("pause")) evName = tr("Pause");
+            else if (ev.typ == QLatin1String("fortsetzen")) evName = tr("Fortsetzen");
+            else if (ev.typ == QLatin1String("abbruch")) evName = tr("Abbruch");
+            else evName = tr("Druckende");
+            auto *s = mk(evName, Qt::gray);
             s->append(ev.zeitS / 60.0, 0);
             s->append(ev.zeitS / 60.0, qMax(p.dueseSollC, 250.0));
             s->setPen(QPen(Qt::gray, 0, Qt::DashLine));
