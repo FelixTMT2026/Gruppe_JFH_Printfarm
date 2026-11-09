@@ -520,9 +520,10 @@ void TestGui::plotLegendeUebersetzt()
     QStringList names;
     for (auto *s : plot->chart()->series())
         names << s->name();
-    QVERIFY(names.contains(QString::fromUtf8("Düse Ist (Druck)")));
-    QVERIFY(names.contains(QString::fromUtf8("Bett Ist (Aufheizen)")));
+    QVERIFY(names.contains(QString::fromUtf8("Düsentemperatur")));
+    QVERIFY(names.contains(QString::fromUtf8("Betttemperatur")));
     QVERIFY(names.contains(QString::fromUtf8("Druckstart")));
+    QVERIFY(!names.contains(QString::fromUtf8("Düse Ist (Druck)")));   // alte Namen weg
 
     // Englisch umschalten -> Legende übersetzt
     if (tabs->tabText(0) != QStringLiteral("Printers"))
@@ -542,8 +543,8 @@ void TestGui::plotLegendeUebersetzt()
     names.clear();
     for (auto *s : plot->chart()->series())
         names << s->name();
-    QVERIFY(names.contains(QStringLiteral("Nozzle actual (print)")));
-    QVERIFY(names.contains(QStringLiteral("Bed actual (heat-up)")));
+    QVERIFY(names.contains(QStringLiteral("Nozzle temperature")));
+    QVERIFY(names.contains(QStringLiteral("Bed temperature")));
     QVERIFY(names.contains(QStringLiteral("Print start")));
     // zurück auf Deutsch
     w->menuBar()->actions().at(1)->menu()->actions().last()->trigger();

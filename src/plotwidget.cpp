@@ -37,21 +37,17 @@ void PlotWidget::zeigeProtokoll(const Protokoll &p)
         s->setColor(c);
         return s;
     };
-    auto *sSoll = mk(tr("Düse Soll (Druck)"), Qt::red);
-    auto *sIst = mk(tr("Düse Ist (Druck)"), Qt::darkRed);
-    auto *sBett = mk(tr("Bett Ist (Druck)"), Qt::blue);
-    auto *sIstAuf = mk(tr("Düse Ist (Aufheizen)"), QColor(255, 128, 0));
-    auto *sBettAuf = mk(tr("Bett Ist (Aufheizen)"), QColor(0, 128, 255));
+    // nur echte Messdaten: Düsentemperatur und Betttemperatur über die ganze Zeit
+    auto *sDuese = mk(tr("Düsentemperatur"), QColor(214, 69, 49));
+    auto *sBett = mk(tr("Betttemperatur"), QColor(41, 128, 185));
 
     // Zeitachse in Minuten (Protokoll intern in Sekunden)
     for (const auto &m : p.aufheizen) {
-        sIstAuf->append(m.zeitS / 60.0, m.dueseIstC);
-        sBettAuf->append(m.zeitS / 60.0, m.bettIstC);
+        sDuese->append(m.zeitS / 60.0, m.dueseIstC);
+        sBett->append(m.zeitS / 60.0, m.bettIstC);
     }
     for (const auto &m : p.druck) {
-        if (!qFuzzyIsNull(m.dueseSollC))
-            sSoll->append(m.zeitS / 60.0, m.dueseSollC);
-        sIst->append(m.zeitS / 60.0, m.dueseIstC);
+        sDuese->append(m.zeitS / 60.0, m.dueseIstC);
         sBett->append(m.zeitS / 60.0, m.bettIstC);
     }
     // Ereignis-Markierungen als senkrechte Linien
@@ -71,11 +67,8 @@ void PlotWidget::zeigeProtokoll(const Protokoll &p)
             chart()->addSeries(s);
         }
     }
-    chart()->addSeries(sSoll);
-    chart()->addSeries(sIst);
+    chart()->addSeries(sDuese);
     chart()->addSeries(sBett);
-    chart()->addSeries(sIstAuf);
-    chart()->addSeries(sBettAuf);
 
     chart()->createDefaultAxes();
     auto *ax = qobject_cast<QValueAxis*>(chart()->axes(Qt::Horizontal).first());

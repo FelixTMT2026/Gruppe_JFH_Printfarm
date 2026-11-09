@@ -799,69 +799,54 @@
         <translation>Temperature curve job %1</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="40"/>
-        <source>Düse Soll (Druck)</source>
-        <translation>Nozzle target (print)</translation>
-    </message>
-    <message>
         <location filename="../src/plotwidget.cpp" line="41"/>
-        <source>Düse Ist (Druck)</source>
-        <translation>Nozzle actual (print)</translation>
+        <source>Düsentemperatur</source>
+        <translation>Nozzle temperature</translation>
     </message>
     <message>
         <location filename="../src/plotwidget.cpp" line="42"/>
-        <source>Bett Ist (Druck)</source>
-        <translation>Bed actual (print)</translation>
+        <source>Betttemperatur</source>
+        <translation>Bed temperature</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="43"/>
-        <source>Düse Ist (Aufheizen)</source>
-        <translation>Nozzle actual (heat-up)</translation>
-    </message>
-    <message>
-        <location filename="../src/plotwidget.cpp" line="44"/>
-        <source>Bett Ist (Aufheizen)</source>
-        <translation>Bed actual (heat-up)</translation>
-    </message>
-    <message>
-        <location filename="../src/plotwidget.cpp" line="62"/>
+        <location filename="../src/plotwidget.cpp" line="58"/>
         <source>Druckstart</source>
         <translation>Print start</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="63"/>
+        <location filename="../src/plotwidget.cpp" line="59"/>
         <source>Pause</source>
         <translation>Pause</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="64"/>
+        <location filename="../src/plotwidget.cpp" line="60"/>
         <source>Fortsetzen</source>
         <translation>Resume</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="65"/>
+        <location filename="../src/plotwidget.cpp" line="61"/>
         <source>Abbruch</source>
         <translation>Abort</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="66"/>
+        <location filename="../src/plotwidget.cpp" line="62"/>
         <source>Druckende</source>
         <translation>Print end</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="82"/>
-        <location filename="../src/plotwidget.cpp" line="105"/>
+        <location filename="../src/plotwidget.cpp" line="75"/>
+        <location filename="../src/plotwidget.cpp" line="98"/>
         <source>Zeit [min]</source>
         <translation>Time [min]</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="84"/>
-        <location filename="../src/plotwidget.cpp" line="107"/>
+        <location filename="../src/plotwidget.cpp" line="77"/>
+        <location filename="../src/plotwidget.cpp" line="100"/>
         <source>Temperatur [°C]</source>
         <translation>Temperature [°C]</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="91"/>
+        <location filename="../src/plotwidget.cpp" line="84"/>
         <source>Vergleich Sprungantworten</source>
         <translation>Compare step responses</translation>
     </message>
