@@ -2,12 +2,17 @@
 #include <QChart>
 #include <QValueAxis>
 #include <QLineSeries>
+#include <QApplication>
+#include <QPalette>
 
 PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
 {
     chart()->setAnimationOptions(QChart::NoAnimation);
     chart()->legend()->setVisible(true);
     chart()->setTitle(tr("Temperaturverlauf"));
+    // Chart-Theme folgt dem App-Theme (hell/dunkel)
+    const QColor win = qApp->palette().color(QPalette::Window);
+    chart()->setTheme(win.lightness() < 128 ? QChart::ChartThemeDark : QChart::ChartThemeLight);
     setRenderHint(QPainter::Antialiasing);
 }
 

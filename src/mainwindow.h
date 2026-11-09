@@ -15,6 +15,7 @@ public:
 private:
     void bauUI();
     void menuesErzeugen();
+    void applyTheme();   // Light-/Darkmode-Palette + Stylesheet aus den Layout-Entwürfen
     void themeUmschalten();
     void spracheUmschalten();
     void login();
