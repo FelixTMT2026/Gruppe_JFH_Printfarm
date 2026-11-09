@@ -17,6 +17,7 @@
 #include "ganttwidget.h"
 #include "analyse.h"
 #include <QLabel>
+#include <QChart>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -35,6 +36,7 @@ private slots:
     void fehlerlogHatEintraege();
     void teileFilterAusstehend();
     void ganttLaesstSichZeichnen();
+    void themeFarbenBeiderModi();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -265,6 +267,38 @@ void TestGui::ganttLaesstSichZeichnen()
     QTest::qWait(30);
     g.leeren();
     QVERIFY(true);   // kein Crash beim Zeichnen
+}
+
+void TestGui::themeFarbenBeiderModi()
+{
+    // Darkmode einschalten: Stylesheet muss die dunkle Palette enthalten
+    QAction *theme = nullptr;
+    for (auto *m : w->menuBar()->actions())
+        for (auto *a : m->menu()->actions())
+            if (a->text().contains(QString::fromUtf8("Darkmode")))
+                theme = a;
+    QVERIFY(theme);
+    if (!theme->isChecked()) theme->trigger();
+    QVERIFY(theme->isChecked());
+    QString sheet = qApp->styleSheet();
+    QVERIFY(sheet.contains(QStringLiteral("#202B39")));   // dunkler Hintergrund
+    QVERIFY(sheet.contains(QStringLiteral("#4A7DFF")));   // dunkler Akzent
+    QVERIFY(sheet.contains(QStringLiteral("#E6ECF3")));   // heller Text
+    QVERIFY(sheet.contains(QStringLiteral("QComboBox QAbstractItemView")));  // Dropdown gestylt
+    QVERIFY(sheet.contains(QStringLiteral("QScrollBar::handle")));           // Scrollbar gestylt
+    // alle PlotWidgets folgen dem dunklen Theme
+    for (auto *p : w->findChildren<PlotWidget*>())
+        QCOMPARE(p->chart()->theme(), QChart::ChartThemeDark);
+
+    // Lightmode: helle Palette
+    theme->trigger();
+    QVERIFY(!theme->isChecked());
+    sheet = qApp->styleSheet();
+    QVERIFY(sheet.contains(QStringLiteral("#D9DFE7")));   // heller Hintergrund
+    QVERIFY(sheet.contains(QStringLiteral("#001065")));   // Akzent dunkelblau
+    QVERIFY(sheet.contains(QStringLiteral("#1C2733")));   // dunkler Text
+    for (auto *p : w->findChildren<PlotWidget*>())
+        QCOMPARE(p->chart()->theme(), QChart::ChartThemeLight);
 }
 
 QTEST_MAIN(TestGui)

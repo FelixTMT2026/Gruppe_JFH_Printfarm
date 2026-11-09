@@ -16,4 +16,5 @@ public:
     void zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> &kurven,
                         bool nurDueseIst = true);
     void leeren();
+    void setDarkMode(bool dark);   // Chart-Theme an App-Theme koppeln (auch bei Runtime-Wechsel)
 };

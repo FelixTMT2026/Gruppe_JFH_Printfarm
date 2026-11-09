@@ -11,9 +11,13 @@ PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
     chart()->legend()->setVisible(true);
     chart()->setTitle(tr("Temperaturverlauf"));
     // Chart-Theme folgt dem App-Theme (hell/dunkel)
-    const QColor win = qApp->palette().color(QPalette::Window);
-    chart()->setTheme(win.lightness() < 128 ? QChart::ChartThemeDark : QChart::ChartThemeLight);
+    setDarkMode(qApp->palette().color(QPalette::Window).lightness() < 128);
     setRenderHint(QPainter::Antialiasing);
+}
+
+void PlotWidget::setDarkMode(bool dark)
+{
+    chart()->setTheme(dark ? QChart::ChartThemeDark : QChart::ChartThemeLight);
 }
 
 void PlotWidget::leeren()
