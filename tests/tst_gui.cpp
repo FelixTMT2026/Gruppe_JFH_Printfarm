@@ -34,6 +34,7 @@ private slots:
     void spracheWechseltTabTexte();
     void materialTabStatistikGefuellt();
     void fehlerlogHatEintraege();
+    void teileInitialSortiertUndAusgewaehlt();   // vor dem Filter-Test, da der die Sortierung zurücksetzt
     void teileFilterAusstehend();
     void ganttLaesstSichZeichnen();
     void themeFarbenBeiderModi();
@@ -346,6 +347,24 @@ void TestGui::sortierungMitDuplikatenCrashfrei()
     for (int i = 1; i < amodel->rowCount(); ++i)
         QVERIFY(amodel->data(amodel->index(i - 1, 5), Qt::DisplayRole).toString() >= amodel->data(amodel->index(i, 5), Qt::DisplayRole).toString());
     amodel->sort(0, Qt::AscendingOrder);
+}
+
+void TestGui::teileInitialSortiertUndAusgewaehlt()
+{
+    // Tab "Gedruckte Teile": default nach Start absteigend sortiert
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *view = tabs->widget(1)->findChild<QTableView*>();
+    auto *model = static_cast<AuftragModel*>(view->model());
+    QVERIFY(model->rowCount() > 1500);
+    const QString first = model->data(model->index(0, AuftragModel::ColStart), Qt::DisplayRole).toString();
+    const QString last = model->data(model->index(model->rowCount() - 1, AuftragModel::ColStart), Qt::DisplayRole).toString();
+    QVERIFY(first >= last);   // absteigend nach Zeit
+    // ein fertiger Auftrag ist ausgewählt (Zeile selektiert)
+    QVERIFY(view->currentIndex().isValid());
+    const auto *a = model->auftragAt(view->currentIndex().row());
+    QVERIFY(a);
+    QVERIFY(a->ergebnis != QLatin1String("ausstehend"));
+    QVERIFY(a->ende.isValid());   // letzter beendeter Druck
 }
 
 QTEST_MAIN(TestGui)

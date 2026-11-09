@@ -42,6 +42,7 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     auto *splitter = new QSplitter(Qt::Horizontal, this);
     m_model = new AuftragModel(store, this);
     connect(store, &DataStore::datenGeladen, m_model, &AuftragModel::refresh);
+    connect(store, &DataStore::datenGeladen, this, &TeileWidget::initialAuswahl);
     m_view = new QTableView(this);
     m_view->setModel(m_model);
     m_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -101,6 +102,9 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
         emit statusMeldung(tr("Protokollfehler %1: %2").arg(id, f));
     });
     m_plot->leeren();
+    // Daten bereits geladen (z. B. nach Login/Sprachwechsel mit UI-Neuaufbau)?
+    if (!store->auftraege().isEmpty())
+        initialAuswahl();
 }
 
 void TeileWidget::zeigeAuftrag(const Auftrag &a)
@@ -143,6 +147,31 @@ void TeileWidget::zeigeAuftrag(const Auftrag &a)
             fb.append(bef.fehlerbilder);
             m_store->addLog(LogEintrag::Protokoll,
                 tr("Auftrag %1: %2").arg(a.auftragId, fb.join(QStringLiteral("; "))), a.auftragId);
+        }
+    }
+}
+
+void TeileWidget::initialAuswahl()
+{
+    // Default-Sortierung: nach Startzeit absteigend (neueste zuerst)
+    m_model->sort(AuftragModel::ColStart, Qt::DescendingOrder);
+    // letzten beendeten Druck auswählen (max. Endzeit unter den fertigen Aufträgen)
+    const Auftrag *last = nullptr;
+    for (int i = 0; i < m_model->rowCount(); ++i) {
+        const Auftrag *a = m_model->auftragAt(i);
+        if (!a || a->ergebnis == QLatin1String("ausstehend") || !a->ende.isValid())
+            continue;
+        if (!last || a->ende > last->ende)
+            last = a;
+    }
+    if (!last)
+        return;
+    for (int i = 0; i < m_model->rowCount(); ++i) {
+        if (m_model->auftragAt(i) == last) {
+            m_view->setCurrentIndex(m_model->index(i, 0));
+            m_view->selectRow(i);
+            zeigeAuftrag(*last);   // Protokoll + Plot + Regelgüte sofort anzeigen
+            break;
         }
     }
 }

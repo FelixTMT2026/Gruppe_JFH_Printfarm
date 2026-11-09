@@ -18,6 +18,7 @@ signals:
 private:
     void zeigeAuftrag(const Auftrag &a);
     void planeAuftraege();
+    void initialAuswahl();   // nach Laden: nach Zeit sortieren + letzten fertigen Druck wählen
     DataStore *m_store;
     ProtocolLoader *m_loader;
     AuftragModel *m_model;
