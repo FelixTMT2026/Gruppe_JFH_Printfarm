@@ -5,7 +5,7 @@
 #include <QApplication>
 #include <QPalette>
 #include <QCheckBox>
-#include <climits>
+#include <QCategoryAxis>
 
 PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
 {
@@ -31,39 +31,31 @@ void PlotWidget::setDarkMode(bool dark)
     chart()->setTheme(dark ? QChart::ChartThemeDark : QChart::ChartThemeLight);
 }
 
-// LTTB (Steinarsson): pro Bucket wird der Punkt mit der größten Dreiecksfläche
-// gewählt — visuell redundante Punkte (gerade/stabile Bereiche) werden entfernt,
-// Sprünge und Maxima bleiben erhalten. Zeitachse bleibt linear.
-QVector<QPointF> PlotWidget::lttb(const QVector<QPointF> &points, int threshold)
+// Adaptive X-Achsen-Skalierung: die reale Zeit wird non-linear auf die Anzeige-X
+// abgebildet. Maßgeblich ist die lokale Änderung der Düsentemperatur: starke
+// Änderungen (Sprünge, Aufheizen) werden bis zu 10x gestreckt, stabile Phasen
+// normal. Im Standard-Modus (adaptiv=false) bleibt die Achse linear.
+QVector<double> PlotWidget::adaptiveZeitachse(const QVector<QPointF> &pts, bool adaptiv)
 {
-    const int n = points.size();
-    if (threshold <= 0 || n <= threshold)
-        return points;
-    QVector<QPointF> out;
-    out.reserve(threshold);
-    out.append(points.first());
-    const int bucketSize = (n - 2) / (threshold - 2);
-    for (int i = 0; i < threshold - 2; ++i) {
-        const int b0 = 1 + i * bucketSize;
-        const int b1 = qMin(n - 1, b0 + bucketSize);
-        double avgX = 0, avgY = 0;
-        const int n1 = qMin(n, b1 + bucketSize);
-        for (int j = b1; j < n1; ++j) { avgX += points[j].x(); avgY += points[j].y(); }
-        const int cnt = qMax(1, n1 - b1);
-        const QPointF avg(avgX / cnt, avgY / cnt);
-        const QPointF a = points[b0 - 1];
-        double maxArea = -1;
-        int maxIdx = b0;
-        for (int j = b0; j < b1; ++j) {
-            const QPointF p = points[j];
-            const double area = qAbs((a.x() - avg.x()) * (p.y() - a.y()) -
-                                     (a.x() - p.x()) * (avg.y() - a.y())) * 0.5;
-            if (area > maxArea) { maxArea = area; maxIdx = j; }
-        }
-        out.append(points[maxIdx]);
+    const int n = pts.size();
+    QVector<double> dispX(n);
+    if (!adaptiv || n <= 2) {
+        for (int i = 0; i < n; ++i)
+            dispX[i] = pts[i].x();
+        return dispX;
     }
-    out.append(points.last());
-    return out;
+    QVector<double> imp(n, 1e-3);
+    double maxImp = 1e-9;
+    for (int i = 1; i < n; ++i) {
+        imp[i] = qAbs(pts[i].y() - pts[i - 1].y()) + 1e-3;
+        maxImp = qMax(maxImp, imp[i]);
+    }
+    dispX[0] = pts[0].x();
+    for (int i = 1; i < n; ++i) {
+        const double dx = pts[i].x() - pts[i - 1].x();
+        dispX[i] = dispX[i - 1] + dx * (1.0 + 9.0 * imp[i] / maxImp);   // bis 10x gestreckt
+    }
+    return dispX;
 }
 
 void PlotWidget::leeren()
@@ -115,9 +107,9 @@ void PlotWidget::render()
     if (!m_rohdaten)
         return;
 
-    // Zeitachse bleibt linear (in Minuten); adaptiv = LTTB-Decimation auf
-    // die aktuelle Plot-Breite (~1 Punkt/Pixel), Standard = alle Punkte.
-    const int schwelle = m_adaptiv ? qMax(200, width()) : INT_MAX;
+    // ALLE Punkte bleiben erhalten; adaptiv wird nur die X-Achsen-Skalierung
+    // (Zeit non-linear gestreckt an Änderungsstellen), Standard = linear.
+    const QVector<double> dispX = adaptiveZeitachse(m_duesePts, m_adaptiv);
 
     auto mk = [](const QString &name, const QColor &c) {
         auto *s = new QLineSeries();
@@ -127,31 +119,56 @@ void PlotWidget::render()
     };
     auto *sDuese = mk(tr("Düsentemperatur"), QColor(214, 69, 49));
     auto *sBett = mk(tr("Betttemperatur"), QColor(41, 128, 185));
-    for (const auto &pt : lttb(m_duesePts, schwelle))
-        sDuese->append(pt);
-    for (const auto &pt : lttb(m_bettPts, schwelle))
-        sBett->append(pt);
-    // Ereignis-Marker (nur Pause/Fortsetzen/Abbruch)
+    for (int i = 0; i < m_duesePts.size(); ++i)
+        sDuese->append(dispX[i], m_duesePts[i].y());
+    for (int i = 0; i < m_bettPts.size(); ++i)
+        sBett->append(dispX[i], m_bettPts[i].y());
+    // Ereignis-Marker (nur Pause/Fortsetzen/Abbruch), auf Anzeige-X gemappt
     for (const auto &ev : m_events) {
+        double xd = ev.first;
+        if (m_adaptiv && !m_duesePts.isEmpty()) {
+            for (int i = 1; i < m_duesePts.size(); ++i) {
+                if (m_duesePts[i].x() >= ev.first) {
+                    const double f = (ev.first - m_duesePts[i - 1].x()) /
+                                     qMax(1e-9, m_duesePts[i].x() - m_duesePts[i - 1].x());
+                    xd = dispX[i - 1] + f * (dispX[i] - dispX[i - 1]);
+                    break;
+                }
+            }
+        }
         auto *s = mk(ev.second, Qt::gray);
-        s->append(ev.first, 0);
-        s->append(ev.first, m_maxTemp);
+        s->append(xd, 0);
+        s->append(xd, m_maxTemp);
         s->setPen(QPen(Qt::gray, 0, Qt::DashLine));
         chart()->addSeries(s);
     }
     chart()->addSeries(sDuese);
     chart()->addSeries(sBett);
 
-    chart()->createDefaultAxes();
-    auto *ax = qobject_cast<QValueAxis*>(chart()->axes(Qt::Horizontal).first());
-    if (ax) {
-        ax->setTitleText(tr("Zeit [min]"));
-        ax->setLabelFormat(QStringLiteral("%.0f"));   // nur ganze Zahlen
+    // Achsen: X als Kategorieachse, damit trotz verzerrter Skalierung die echte
+    // Zeit (min, ganzzahlig) abgelesen werden kann; Y linear ganzzahlig.
+    const auto oldAxes = chart()->axes();
+    for (auto *a : oldAxes) { chart()->removeAxis(a); delete a; }
+    auto *cat = new QCategoryAxis();
+    cat->setTitleText(tr("Zeit [min]"));
+    const double xMin = dispX.first(), xMax = qMax(dispX.last(), dispX.first() + 1e-9);
+    cat->setRange(xMin, xMax);
+    const int ticks = 6;
+    for (int t = 0; t <= ticks; ++t) {
+        const double pos = xMin + (xMax - xMin) * t / ticks;
+        double realMin = m_duesePts.last().x();
+        for (int i = 0; i < dispX.size(); ++i)
+            if (dispX[i] >= pos) { realMin = m_duesePts[i].x(); break; }
+        cat->append(QString::number(qRound64(realMin)), pos);
     }
-    auto *ay = qobject_cast<QValueAxis*>(chart()->axes(Qt::Vertical).first());
-    if (ay) {
-        ay->setTitleText(tr("Temperatur [°C]"));
-        ay->setLabelFormat(QStringLiteral("%.0f"));   // nur ganze Zahlen
+    chart()->addAxis(cat, Qt::AlignBottom);
+    auto *ay = new QValueAxis();
+    ay->setTitleText(tr("Temperatur [°C]"));
+    ay->setLabelFormat(QStringLiteral("%.0f"));
+    chart()->addAxis(ay, Qt::AlignLeft);
+    for (auto *s : chart()->series()) {
+        s->attachAxis(cat);
+        s->attachAxis(ay);
     }
 }
 
@@ -170,7 +187,7 @@ void PlotWidget::zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> 
         QVector<QPointF> pts;
         for (const auto &m : k.second)
             pts.append({m.zeitS / 60.0, nurDueseIst ? m.dueseIstC : m.bettIstC});
-        for (const auto &pt : lttb(pts, m_adaptiv ? qMax(200, width()) : INT_MAX))
+        for (const auto &pt : pts)   // Vergleich: alle Punkte, lineare Zeit
             s->append(pt);
         chart()->addSeries(s);
     }

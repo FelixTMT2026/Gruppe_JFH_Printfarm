@@ -19,9 +19,11 @@ public:
     void setDarkMode(bool dark);   // Chart-Theme an App-Theme koppeln (auch bei Runtime-Wechsel)
     QString aktuellerAuftrag() const { return m_auftragId; }   // zuletzt gezeichneter Auftrag
 
-    // Adaptives Downsampling (LTTB): behält an stark veränderlichen Stellen viele
-    // Punkte, reduziert stabile Bereiche auf wenige. Endpunkte bleiben erhalten.
-    static QVector<QPointF> lttb(const QVector<QPointF> &points, int threshold);
+    // Adaptive X-Achsen-Skalierung: bildet die reale Zeit non-linear auf die
+    // Anzeige-X ab — Bereiche mit starker Änderung werden gestreckt (breiter),
+    // stabile Bereiche gestaucht (kürzer). Alle Punkte bleiben erhalten.
+    // Rueckgabe: display-x pro Rohpunkt (bei linear: identisch mit realer Zeit).
+    static QVector<double> adaptiveZeitachse(const QVector<QPointF> &pts, bool adaptiv);
 protected:
     void resizeEvent(QResizeEvent *e) override;   // bei Skalierung neu decimieren
 private:

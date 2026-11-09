@@ -25,6 +25,7 @@
 #include <QStyledItemDelegate>
 #include <QLineSeries>
 #include <QCheckBox>
+#include <QCategoryAxis>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -53,9 +54,8 @@ private slots:
     void spracheUmschaltungKomplett();
     void plotLegendeUebersetzt();
     void singleClickAktualisiertProtokoll();
-    void lttbAdaptiv();
-    void resizeDecimiertAdaptiv();
-    void adaptivToggle();
+    void adaptiveZeitachseSkaliert();
+    void adaptivToggleAchse();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -422,11 +422,11 @@ void TestGui::protokollOhneAnmeldungSichtbar()
     emit view->doubleClicked(model->index(ziel2, 0));
     QTest::qWait(50);
     QVERIFY(!plot->chart()->series().isEmpty());
-    // Zeitachse linear in Minuten, nur ganze Zahlen als Achsenbeschriftung
-    auto *ax = qobject_cast<QValueAxis*>(plot->chart()->axes(Qt::Horizontal).first());
+    // Zeitachse in Minuten (Kategorieachse mit echten Minuten-Labels), Y ganzzahlig
+    auto *ax = plot->chart()->axes(Qt::Horizontal).first();
     QVERIFY(ax);
     QVERIFY(ax->titleText().contains(QStringLiteral("min")));
-    QCOMPARE(ax->labelFormat(), QStringLiteral("%.0f"));
+    QVERIFY(qobject_cast<QCategoryAxis*>(ax) != nullptr);
     auto *ay = qobject_cast<QValueAxis*>(plot->chart()->axes(Qt::Vertical).first());
     QVERIFY(ay);
     QCOMPARE(ay->labelFormat(), QStringLiteral("%.0f"));
@@ -588,72 +588,31 @@ void TestGui::singleClickAktualisiertProtokoll()
     QVERIFY(plot->aktuellerAuftrag() != model->auftragAt(z1)->auftragId);
 }
 
-void TestGui::lttbAdaptiv()
+void TestGui::adaptiveZeitachseSkaliert()
 {
-    // dichtes verrauschtes Signal mit einem großen Sprung in der Mitte
+    // Signal: lange stabile Phase, dann ein Sprung, dann wieder stabil
     QVector<QPointF> pts;
-    for (int i = 0; i < 5000; ++i) {
-        double y = 100.0 + ((i * 37) % 10) * 0.5;      // Rauschen
-        if (i == 2500) y += 80.0;                       // Sprung
-        pts.append({double(i), y});
-    }
-    const auto out = PlotWidget::lttb(pts, 200);
-    QVERIFY(out.size() <= 200);
-    QVERIFY(out.size() >= 2);
-    QCOMPARE(out.first(), pts.first());   // Endpunkte erhalten
-    QCOMPARE(out.last(), pts.last());
-    // Sprungstelle bleibt detailreich erhalten (Punkt nahe i=2500 mit hoher Fläche)
-    bool sprungErhalten = false;
-    for (const auto &p : out)
-        if (qAbs(p.x() - 2500) < 60 && p.y() > 150) sprungErhalten = true;
-    QVERIFY(sprungErhalten);
-    // stabiles Signal: konstante Werte -> trotzdem Endpunkte, Größe begrenzt
-    QVector<QPointF> stab;
-    for (int i = 0; i < 5000; ++i) stab.append({double(i), 100.0});
-    const auto out2 = PlotWidget::lttb(stab, 200);
-    QVERIFY(out2.size() <= 200);
-    QCOMPARE(out2.first(), stab.first());
-    QCOMPARE(out2.last(), stab.last());
-    // klein genug -> unverändert
-    QVector<QPointF> klein = {{0, 0}, {1, 1}, {2, 0}};
-    QCOMPARE(PlotWidget::lttb(klein, 200).size(), 3);
+    for (int i = 0; i < 1000; ++i) pts.append({double(i), 100.0});          // stabil
+    for (int i = 0; i < 50; ++i) pts.append({1000.0 + i, 100.0 + i * 2.0});  // Sprung
+    for (int i = 0; i < 1000; ++i) pts.append({1050.0 + i, 200.0});          // stabil
+    const auto warp = PlotWidget::adaptiveZeitachse(pts, true);
+    const auto lin = PlotWidget::adaptiveZeitachse(pts, false);
+    QCOMPARE(warp.size(), pts.size());
+    QCOMPARE(lin.size(), pts.size());
+    // linear: display-x == reale Zeit
+    QCOMPARE(lin.last(), pts.last().x());
+    // adaptiv: Endpunkte anchors bleiben, Gesamtspanne gestreckt
+    QCOMPARE(warp.first(), pts.first().x());
+    QVERIFY(warp.last() > lin.last());
+    // Sprungbereich (Index 1000..1050) ist pro realer Minute breiter als der stabile Bereich davor
+    const double dxStabil = (warp[999] - warp[0]) / 999.0;                  // px pro Minute stabil
+    const double dxSprung = (warp[1050] - warp[1000]) / 50.0;                // px pro Minute im Sprung
+    QVERIFY(dxSprung > dxStabil * 5);   // Sprung deutlich breiter skaliert
+    // Standardmodus: linear
+    QCOMPARE(PlotWidget::adaptiveZeitachse(pts, false).last(), pts.last().x());
 }
 
-void TestGui::resizeDecimiertAdaptiv()
-{
-    // Plot mit Rohdaten füllen, dann Breite ändern -> Punktzahl der Serie folgt der Breite
-    PlotWidget plot;
-    Protokoll p;
-    p.auftragId = "JT";
-    p.dueseSollC = 210;
-    for (int i = 0; i < 3000; ++i) {
-        Messpunkt m; m.zeitS = i; m.dueseIstC = 100 + (i % 50); m.bettIstC = 60;
-        p.aufheizen.append(m);
-    }
-    plot.resize(1200, 400);
-    plot.show();   // sichtbar, damit resizeEvent geliefert wird
-    QTest::qWait(20);
-    plot.zeigeProtokoll(p);
-    auto countFor = [&]() {
-        int n = 0;
-        for (auto *s : plot.chart()->series())
-            if (s->name() == QString::fromUtf8("Düsentemperatur"))
-                n = static_cast<QLineSeries*>(s)->points().size();
-        return n;
-    };
-    const int gross = countFor();
-    plot.resize(300, 400);   // klein skalieren
-    QTest::qWait(20);
-    const int klein = countFor();
-    QVERIFY(gross > 0);
-    QVERIFY(klein > 0);
-    QVERIFY(klein < gross);   // schmaler -> weniger Punkte (adaptiv)
-    plot.resize(1200, 400);  // groß skalieren
-    QTest::qWait(20);
-    QVERIFY(countFor() > klein);   // breiter -> wieder mehr Detail
-}
-
-void TestGui::adaptivToggle()
+void TestGui::adaptivToggleAchse()
 {
     PlotWidget plot;
     plot.resize(800, 400);
@@ -662,8 +621,8 @@ void TestGui::adaptivToggle()
     Protokoll p;
     p.auftragId = "JT";
     p.dueseSollC = 210;
-    for (int i = 0; i < 3000; ++i) {
-        Messpunkt m; m.zeitS = i; m.dueseIstC = 100 + (i % 50); m.bettIstC = 60;
+    for (int i = 0; i < 2000; ++i) {
+        Messpunkt m; m.zeitS = i; m.dueseIstC = (i == 1000) ? 220.0 : 100.0 + (i % 5); m.bettIstC = 60;
         p.aufheizen.append(m);
     }
     plot.zeigeProtokoll(p);
@@ -673,23 +632,25 @@ void TestGui::adaptivToggle()
                 return int(static_cast<QLineSeries*>(s)->points().size());
         return 0;
     };
+    auto span = [&]() -> double {
+        const auto *s = static_cast<QLineSeries*>(plot.chart()->series().first());
+        const auto pts = s->points();
+        return pts.last().x() - pts.first().x();
+    };
     auto *box = plot.findChild<QCheckBox*>();
     QVERIFY(box);
     QVERIFY(box->isChecked());            // default: adaptiv an
-    const int adaptiv = count();
-    QVERIFY(adaptiv < 3000);              // decimiert
-    box->setChecked(false);               // Standard: alle Punkte
+    QCOMPARE(count(), 2000);              // ALLE Punkte bleiben (kein Downsampling)
+    const double spanAdaptiv = span();
+    box->setChecked(false);               // Standard: lineare Zeitachse
     QTest::qWait(20);
-    QCOMPARE(count(), 3000);
-    box->setChecked(true);                // zurück zu adaptiv
+    QCOMPARE(count(), 2000);              // weiterhin alle Punkte
+    const double spanStandard = span();
+    QCOMPARE(spanStandard, 1999.0 / 60.0);          // linear: reale Zeitspanne in min
+    QVERIFY(spanAdaptiv > spanStandard);            // adaptiv: Achse gestreckt
+    box->setChecked(true);
     QTest::qWait(20);
-    QCOMPARE(count(), adaptiv);
-    // Zeitachse bleibt in beiden Modi linear und endet auf der echten Endzeit
-    auto lastX = [&]() {
-        const auto *s = static_cast<QLineSeries*>(plot.chart()->series().first());
-        return s->points().last().x();
-    };
-    QCOMPARE(lastX(), 2999.0 / 60.0);   // linear: letzte Zeit in Minuten
+    QCOMPARE(span(), spanAdaptiv);
 }
 
 QTEST_MAIN(TestGui)
