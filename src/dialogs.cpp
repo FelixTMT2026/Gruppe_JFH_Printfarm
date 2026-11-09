@@ -50,7 +50,7 @@ DruckerDetailDialog::DruckerDetailDialog(const Drucker &d, const DataStore *stor
     layout->addWidget(m_stammdaten);
 
     const Modell *m = store->modell(d.modellId);
-    QString text = tr("<b>%1</b> — Modell: %2 (%3, %4) | Standort: %5 | Inbetriebnahme: %6 | "
+    QString text = tr("<b>%1</b> - Modell: %2 (%3, %4) | Standort: %5 | Inbetriebnahme: %6 | "
                       "Betriebsstunden: %7 | Düse: %8 mm | Firmware: %9 | PID: Kp=%10 Ki=%11 Kd=%12 | Status: %13")
         .arg(d.druckerId, m ? m->bezeichnung : tr("unbekannt"), m ? m->hersteller : QString(),
              m ? m->kinematik : QString(), d.standort, CsvIo::formatDate(d.inbetriebnahme))
@@ -103,7 +103,7 @@ void DruckerDetailDialog::zeigeAuftrag(const Auftrag &a)
 {
     if (a.ergebnis == QLatin1String("ausstehend")) {
         m_plot->leeren();
-        m_regelguete->setText(tr("Auftrag %1 ist geplant — noch kein Protokoll vorhanden.").arg(a.auftragId));
+        m_regelguete->setText(tr("Auftrag %1 ist geplant - noch kein Protokoll vorhanden.").arg(a.auftragId));
         m_befunde->clear();
         return;
     }

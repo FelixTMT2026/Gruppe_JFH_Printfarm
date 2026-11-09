@@ -22,7 +22,7 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-    setWindowTitle(tr("PrintFarm — Monitoring der 3D-Druckerfarm"));
+    setWindowTitle(tr("PrintFarm - Monitoring der 3D-Druckerfarm"));
     setMinimumSize(960, 640);
     resize(1280, 840);
 
@@ -43,19 +43,10 @@ void MainWindow::bauUI()
     auto *central = takeCentralWidget();
     delete central;
 
-    // Header-Leiste wie im Layout-Entwurf
-    auto *header = new QFrame(this);
-    header->setObjectName(QStringLiteral("header"));
-    header->setFixedHeight(44);
-    auto *hl = new QHBoxLayout(header);
-    hl->setContentsMargins(14, 0, 14, 0);
-    auto *title = new QLabel(tr("PrintFarm — 3D-Druckerfarm Monitoring"), header);
-    title->setObjectName(QStringLiteral("headerTitle"));
-    hl->addWidget(title);
-    hl->addStretch();
-
     m_tabs = new QTabWidget(this);
-    m_tabs->setTabPosition(QTabWidget::West);   // Sidebar-Navigation wie im Layout-Entwurf
+    m_tabs->setTabPosition(QTabWidget::North);            // Tabs oben
+    m_tabs->tabBar()->setExpanding(true);                 // füllen die Breite gleichmäßig (zentriert)
+    m_tabs->setDocumentMode(true);
     auto *druckerTab = new DruckerWidget(m_store, m_loader, this);
     auto *teileTab = new TeileWidget(m_store, m_loader, this);
     auto *materialTab = new MaterialWidget(m_store, this);
@@ -65,14 +56,7 @@ void MainWindow::bauUI()
     m_tabs->addTab(materialTab, tr("Material"));
     m_tabs->addTab(fehlerTab, tr("Fehlerlog"));
 
-    auto *centralLayout = new QVBoxLayout();
-    centralLayout->setContentsMargins(0, 0, 0, 0);
-    centralLayout->setSpacing(0);
-    centralLayout->addWidget(header);
-    centralLayout->addWidget(m_tabs);
-    auto *centralNeu = new QWidget(this);
-    centralNeu->setLayout(centralLayout);
-    setCentralWidget(centralNeu);
+    setCentralWidget(m_tabs);
 
     connect(druckerTab, &DruckerWidget::statusMeldung, this, [this](const QString &t) {
         m_status->setText(t);
@@ -195,15 +179,14 @@ void MainWindow::applyTheme()
         sheet = QStringLiteral(
             "QMainWindow, QDialog { background: #202B39; color: #E6ECF3; }"
             "QWidget { color: #E6ECF3; }"
-            "QFrame#header { background: #212832; }"
-            "QLabel#headerTitle { color: #E6ECF3; font-size: 15px; font-weight: bold; }"
+            "QTabBar { }"
             "QMenuBar { background: #212832; color: #E6ECF3; }"
             "QMenuBar::item:selected { background: #31445A; }"
             "QMenu { background: #26333F; color: #E6ECF3; border: 1px solid #31445A; }"
             "QMenu::item:selected { background: #31445A; }"
             "QTabWidget::pane { border: none; background: #202B39; }"
             "QTabBar::tab { background: #1F2D3B; color: #AEB9C6; padding: 12px 22px; border: none; }"
-            "QTabBar::tab:selected { background: #202B39; color: #6FA0FF; font-weight: bold; border-left: 3px solid #4A7DFF; }"
+            "QTabBar::tab:selected { background: #202B39; color: #6FA0FF; font-weight: bold; border-bottom: 3px solid #4A7DFF; }"
             "QTabBar::tab:hover { background: #26333F; }"
             "QTableView { background: #26333F; alternate-background-color: #2B3947; border: 1px solid #31445A; gridline-color: #31445A; color: #E6ECF3; selection-background-color: #4A7DFF; }"
             "QHeaderView::section { background: #212832; color: #E6ECF3; border: none; padding: 6px; font-weight: bold; }"
@@ -222,15 +205,14 @@ void MainWindow::applyTheme()
         sheet = QStringLiteral(
             "QMainWindow, QDialog { background: #D9DFE7; color: #1C2733; }"
             "QWidget { color: #1C2733; }"
-            "QFrame#header { background: #B9C1CD; }"
-            "QLabel#headerTitle { color: #1C2733; font-size: 15px; font-weight: bold; }"
+            "QTabBar { }"
             "QMenuBar { background: #B9C1CD; color: #1C2733; }"
             "QMenuBar::item:selected { background: #9AA6B8; }"
             "QMenu { background: #FFFFFF; color: #1C2733; border: 1px solid #B9C1CD; }"
             "QMenu::item:selected { background: #D9DFE7; color: #001065; }"
             "QTabWidget::pane { border: none; background: #D9DFE7; }"
             "QTabBar::tab { background: #DAE0E8; color: #4A5568; padding: 12px 22px; border: none; }"
-            "QTabBar::tab:selected { background: #D9DFE7; color: #001065; font-weight: bold; border-left: 3px solid #001065; }"
+            "QTabBar::tab:selected { background: #D9DFE7; color: #001065; font-weight: bold; border-bottom: 3px solid #001065; }"
             "QTabBar::tab:hover { background: #CBD3DE; }"
             "QTableView { background: #FFFFFF; alternate-background-color: #EEF1F5; border: 1px solid #C4CCD8; gridline-color: #C4CCD8; color: #1C2733; selection-background-color: #001065; selection-color: #FFFFFF; }"
             "QHeaderView::section { background: #B9C1CD; color: #1C2733; border: none; padding: 6px; font-weight: bold; }"
@@ -270,7 +252,7 @@ void MainWindow::spracheUmschalten()
             qApp->installTranslator(m_translator);
         else {
             m_store->addLog(LogEintrag::Datei,
-                QStringLiteral("Übersetzung app_en.qm nicht gefunden — Deutsch bleibt aktiv"));
+                QStringLiteral("Übersetzung app_en.qm nicht gefunden - Deutsch bleibt aktiv"));
             delete m_translator;
             m_translator = nullptr;
             m_english = false;

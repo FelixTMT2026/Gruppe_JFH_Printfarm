@@ -34,7 +34,7 @@ void GanttWidget::paintEvent(QPaintEvent *)
     p.fillRect(rect(), palette().color(QPalette::Window));
     if (m_zuweisungen.isEmpty()) {
         p.setPen(textCol);
-        p.drawText(rect(), Qt::AlignCenter, tr("Noch keine Planung vorhanden — „Auftragsplanung (Greedy)“ klicken."));
+        p.drawText(rect(), Qt::AlignCenter, tr("Noch keine Planung vorhanden - „Auftragsplanung (Greedy)“ klicken."));
         return;
     }
     const int leftMargin = 60, topMargin = 24, rowH = 26;

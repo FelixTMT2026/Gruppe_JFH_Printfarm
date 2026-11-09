@@ -4,8 +4,8 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <source>PrintFarm — Monitoring der 3D-Druckerfarm</source>
-        <translation>PrintFarm — 3D Printer Farm Monitoring</translation>
+        <source>PrintFarm - Monitoring der 3D-Druckerfarm</source>
+        <translation>PrintFarm - 3D Printer Farm Monitoring</translation>
     </message>
     <message>
         <source>&amp;Datei</source>

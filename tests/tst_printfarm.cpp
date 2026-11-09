@@ -183,7 +183,7 @@ void TestPrintFarm::regelgueteAufheizen()
 
 void TestPrintFarm::regelabweichungMitPause()
 {
-    // Druckphase: 20 Punkte, davon 3 Pause (schicht=0, 150 °C) — Pausen und
+    // Druckphase: 20 Punkte, davon 3 Pause (schicht=0, 150 °C) - Pausen und
     // Wiederaufheizen (bis |e| <= 3 K) dürfen nicht in die Statistik einfließen.
     QVector<Messpunkt> druck;
     for (int i = 0; i < 20; ++i) {
@@ -573,7 +573,7 @@ void TestPrintFarm::utf8Roundtrip()
     const QString path = dir + "/umlaute.csv";
     const QList<QStringList> rows = {
         {"spalte"},
-        {QString::fromUtf8("Düse verstopft — äöü ß ÄÖÜ  €; Semikolon")},
+        {QString::fromUtf8("Düse verstopft - äöü ß ÄÖÜ  €; Semikolon")},
         {QString::fromUtf8("Zeile mit Komma? nein, aber Bindestrich – ok")},
     };
     QString err;

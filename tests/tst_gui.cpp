@@ -60,7 +60,7 @@ void TestGui::vierTabsInReihenfolge()
     QCOMPARE(tabs->tabText(1), QString::fromUtf8("Gedruckte Teile"));
     QCOMPARE(tabs->tabText(2), QString::fromUtf8("Material"));
     QCOMPARE(tabs->tabText(3), QString::fromUtf8("Fehlerlog"));
-    QCOMPARE(tabs->tabPosition(), QTabWidget::West);   // Sidebar wie im Layout
+    QCOMPARE(tabs->tabPosition(), QTabWidget::North);  // Tabs oben
 }
 
 void TestGui::datenSofortSichtbar()

@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     }
     if (!geladen) {
         w.statusBar()->showMessage(
-            QObject::tr("Kein Datenordner gefunden — bitte über Datei > Datenordner wählen angeben."));
+            QObject::tr("Kein Datenordner gefunden - bitte über Datei > Datenordner wählen angeben."));
     }
 
     w.show();

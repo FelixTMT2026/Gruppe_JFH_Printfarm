@@ -62,7 +62,7 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     splitter->addWidget(rechts);
     layout->addWidget(splitter);
 
-    auto *ganttBox = new QGroupBox(tr("Belegungsplan (Gantt) — geplante Aufträge"), this);
+    auto *ganttBox = new QGroupBox(tr("Belegungsplan (Gantt) - geplante Aufträge"), this);
     auto *gl = new QVBoxLayout(ganttBox);
     m_ganttPlot = new GanttWidget(ganttBox);
     m_ganttPlot->leeren();
@@ -107,7 +107,7 @@ void TeileWidget::zeigeAuftrag(const Auftrag &a)
 {
     m_aktuellerAuftrag = a.auftragId;
     const Material *mat = m_store->material(a.materialId);
-    m_info->setText(tr("<b>%1</b> — %2 auf %3 | Material: %4 | Soll: %5 min, %6 g | Ergebnis: %7%8")
+    m_info->setText(tr("<b>%1</b> - %2 auf %3 | Material: %4 | Soll: %5 min, %6 g | Ergebnis: %7%8")
         .arg(a.auftragId, a.bauteil, a.druckerId, mat ? mat->bezeichnung : a.materialId)
         .arg(a.dauerSollMin).arg(a.filamentSollG).arg(a.ergebnis)
         .arg(a.fehlercode.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(a.fehlercode)));
