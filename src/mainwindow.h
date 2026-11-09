@@ -29,7 +29,7 @@ private:
 
     DataStore *m_store;
     ProtocolLoader *m_loader;
-    class QTabWidget *m_tabs;
+    class QTabWidget *m_tabs = nullptr;
     class QLabel *m_status;
     class QAction *m_themeAction;
     class QAction *m_langAction;
@@ -37,4 +37,5 @@ private:
     QTranslator *m_translator = nullptr;
     bool m_dark = false;
     bool m_english = false;
+    int m_aktiverTab = 0;   // bleibt über Login/Sprachwechsel erhalten
 };

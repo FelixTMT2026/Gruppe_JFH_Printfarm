@@ -65,6 +65,8 @@ bool MainWindow::systemIstDunkel()
 void MainWindow::bauUI()
 {
     menuBar()->clear();
+    if (m_tabs)
+        m_aktiverTab = m_tabs->currentIndex();   // aktiven Tab merken
     auto *central = takeCentralWidget();
     delete central;
 
@@ -82,6 +84,7 @@ void MainWindow::bauUI()
     m_tabs->addTab(fehlerTab, tr("Fehlerlog"));
 
     setCentralWidget(m_tabs);
+    m_tabs->setCurrentIndex(m_aktiverTab);   // gemerkten Tab wieder aktivieren
 
     connect(druckerTab, &DruckerWidget::statusMeldung, this, [this](const QString &t) {
         m_status->setText(t);

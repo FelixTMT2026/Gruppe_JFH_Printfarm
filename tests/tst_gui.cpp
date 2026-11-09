@@ -37,6 +37,7 @@ private slots:
     void teileFilterAusstehend();
     void ganttLaesstSichZeichnen();
     void themeFarbenBeiderModi();
+    void tabBleibtNachUiNeuaufbauErhalten();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -299,6 +300,26 @@ void TestGui::themeFarbenBeiderModi()
     QVERIFY(sheet.contains(QStringLiteral("#1C2733")));   // dunkler Text
     for (auto *p : w->findChildren<PlotWidget*>())
         QCOMPARE(p->chart()->theme(), QChart::ChartThemeLight);
+}
+
+void TestGui::tabBleibtNachUiNeuaufbauErhalten()
+{
+    // Tab 3 (Fehlerlog) aktivieren, dann UI neu aufbauen (Sprachwechsel baut um)
+    auto *tabs = w->findChild<QTabWidget*>();
+    QVERIFY(tabs);
+    tabs->setCurrentIndex(3);
+    QCOMPARE(tabs->currentIndex(), 3);
+    QAction *lang = nullptr;
+    for (auto *m : w->menuBar()->actions())
+        for (auto *a : m->menu()->actions())
+            if (a->text().contains(QStringLiteral("English")) || a->text().contains(QString::fromUtf8("Deutsch")))
+                lang = a;
+    QVERIFY(lang);
+    lang->trigger();   // baut UI neu auf (wie nach Login)
+    tabs = w->findChild<QTabWidget*>();
+    QVERIFY(tabs);
+    QCOMPARE(tabs->currentIndex(), 3);   // gleicher Tab wie vorher
+    tabs->setCurrentIndex(0);
 }
 
 QTEST_MAIN(TestGui)
