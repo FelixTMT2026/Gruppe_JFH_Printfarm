@@ -103,12 +103,12 @@ void TeileWidget::zeigeAuftrag(const Auftrag &a)
     const Material *mat = m_store->material(a.materialId);
     m_info->setText(tr("<b>%1</b> - %2 auf %3 | Material: %4 | Soll: %5 min, %6 g | Ergebnis: %7%8")
         .arg(a.auftragId, a.bauteil, a.druckerId, mat ? mat->bezeichnung : a.materialId)
-        .arg(a.dauerSollMin).arg(a.filamentSollG).arg(a.ergebnis)
+        .arg(qRound64(a.dauerSollMin)).arg(qRound64(a.filamentSollG)).arg(a.ergebnis)
         .arg(a.fehlercode.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(a.fehlercode)));
 
     const auto k = Kostenrechnung::auftrag(a, mat);
     m_kosten->setText(tr("Kosten: Material %1 € + Maschine %2 € = %3 €")
-        .arg(k.materialEur, 0, 'f', 2).arg(k.maschinenEur, 0, 'f', 2).arg(k.gesamtEur, 0, 'f', 2));
+        .arg(qRound64(k.materialEur)).arg(qRound64(k.maschinenEur)).arg(qRound64(k.gesamtEur)));
 
     if (a.ergebnis == QLatin1String("ausstehend")) {
         m_plot->leeren();
@@ -126,10 +126,10 @@ void TeileWidget::zeigeAuftrag(const Auftrag &a)
     const Regelguete rg = RegelgueteRechner::werteAus(p.aufheizen, p.druck, p.dueseSollC);
     if (rg.verfuegbar) {
         m_kosten->setText(m_kosten->text() + tr("<br>Regelgüte: tr=%1 s, Überschwingen=%2 K (%3 %), Ausregelzeit=%4, Ø-Abweichung=%5 K, max=%6 K")
-            .arg(rg.anstiegszeitS, 0, 'f', 1).arg(rg.ueberschwingenK, 0, 'f', 2)
-            .arg(rg.ueberschwingenProzent, 0, 'f', 1)
+            .arg(qRound64(rg.anstiegszeitS)).arg(qRound64(rg.ueberschwingenK))
+            .arg(qRound64(rg.ueberschwingenProzent))
             .arg(rg.ausgeregelt ? QString::number(rg.ausregelzeitS, 'f', 0) + " s" : tr("nicht ausgeregelt"))
-            .arg(rg.mittlereAbweichungK, 0, 'f', 2).arg(rg.maximaleAbweichungK, 0, 'f', 2));
+            .arg(qRound64(rg.mittlereAbweichungK)).arg(qRound64(rg.maximaleAbweichungK)));
         const auto bef = Fehlererkennung::analysiere(p, rg, mat);
         if (bef.schlechtEingestellt || !bef.fehlerbilder.isEmpty()) {
             QStringList fb;

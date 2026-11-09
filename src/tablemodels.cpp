@@ -47,7 +47,7 @@ QVariant DruckerModel::data(const QModelIndex &i, int role) const
         case ColId: return d->druckerId;
         case ColModell: return m ? m->bezeichnung : QStringLiteral("?");
         case ColStandort: return d->standort;
-        case ColBetriebsstunden: return d->betriebsstunden;
+        case ColBetriebsstunden: return qRound64(d->betriebsstunden);   // nur Integer anzeigen
         case ColStatus: return d->status;
         }
     }
@@ -139,7 +139,7 @@ QVariant AuftragModel::data(const QModelIndex &i, int role) const
         case ColDrucker: return a->druckerId;
         case ColBauteil: return a->bauteil;
         case ColStart: return CsvIo::formatDateTime(a->start);
-        case ColDauer: return a->dauerSollMin;
+        case ColDauer: return qRound64(a->dauerSollMin);   // nur Integer anzeigen
         case ColErgebnis: return a->ergebnis;
         case ColFehler: return a->fehlercode;
         }
@@ -205,11 +205,11 @@ QVariant MaterialModel::data(const QModelIndex &i, int role) const
     switch (i.column()) {
     case ColId: return m.materialId;
     case ColBez: return m.bezeichnung;
-    case ColDuese: return m.dueseTempC;
-    case ColBett: return m.bettTempC;
-    case ColDichte: return m.dichteGCm3;
-    case ColPreis: return m.preisEurKg;
-    case ColLuefter: return m.luefterProzent;
+    case ColDuese: return qRound64(m.dueseTempC);
+    case ColBett: return qRound64(m.bettTempC);
+    case ColDichte: return qRound64(m.dichteGCm3);   // nur Integer anzeigen
+    case ColPreis: return qRound64(m.preisEurKg);
+    case ColLuefter: return qRound64(m.luefterProzent);
     }
     return {};
 }
@@ -245,8 +245,8 @@ QVariant ModellModel::data(const QModelIndex &i, int role) const
     case ColBez: return m.bezeichnung;
     case ColKinematik: return m.kinematik;
     case ColBauraum: return QStringLiteral("%1×%2×%3").arg(m.bauraumXMm).arg(m.bauraumYMm).arg(m.bauraumZMm);
-    case ColMaxDuese: return m.maxDueseTempC;
-    case ColMaxBett: return m.maxBettTempC;
+    case ColMaxDuese: return qRound64(m.maxDueseTempC);
+    case ColMaxBett: return qRound64(m.maxBettTempC);
     }
     return {};
 }
@@ -289,7 +289,7 @@ QVariant WartungModel::data(const QModelIndex &i, int role) const
     case ColDrucker: return w.druckerId;
     case ColDatum: return CsvIo::formatDate(w.datum);
     case ColArt: return w.art;
-    case ColDauer: return w.dauerMin;
+    case ColDauer: return qRound64(w.dauerMin);
     case ColBemerkung: return w.bemerkung;
     }
     return {};

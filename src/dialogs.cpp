@@ -54,12 +54,12 @@ DruckerDetailDialog::DruckerDetailDialog(const Drucker &d, const DataStore *stor
                       "Betriebsstunden: %7 | Düse: %8 mm | Firmware: %9 | PID: Kp=%10 Ki=%11 Kd=%12 | Status: %13")
         .arg(d.druckerId, m ? m->bezeichnung : tr("unbekannt"), m ? m->hersteller : QString(),
              m ? m->kinematik : QString(), d.standort, CsvIo::formatDate(d.inbetriebnahme))
-        .arg(d.betriebsstunden).arg(d.dueseMm).arg(d.firmware)
-        .arg(d.pidKp).arg(d.pidKi).arg(d.pidKd).arg(d.status);
+        .arg(qRound64(d.betriebsstunden)).arg(qRound64(d.dueseMm)).arg(d.firmware)
+        .arg(qRound64(d.pidKp)).arg(qRound64(d.pidKi)).arg(qRound64(d.pidKd)).arg(d.status);
     if (m)
         text += tr("<br>Bauraum: %1×%2×%3 mm | max. Düse %4 °C | max. Bett %5 °C")
-                    .arg(m->bauraumXMm).arg(m->bauraumYMm).arg(m->bauraumZMm)
-                    .arg(m->maxDueseTempC).arg(m->maxBettTempC);
+                    .arg(qRound64(m->bauraumXMm)).arg(qRound64(m->bauraumYMm)).arg(qRound64(m->bauraumZMm))
+                    .arg(qRound64(m->maxDueseTempC)).arg(qRound64(m->maxBettTempC));
     m_stammdaten->setText(text);
 
     auto *splitter = new QSplitter(Qt::Vertical, this);
@@ -120,11 +120,11 @@ void DruckerDetailDialog::zeigeAuftrag(const Auftrag &a)
     if (rg.verfuegbar) {
         t = tr("Regelgüte %1:<br>Anstiegszeit: %2 s<br>Überschwingen: %3 K (%4 %)<br>"
                "Ausregelzeit: %5<br Mittlere Abweichung Druck: %6 K<br>Maximale Abweichung: %7 K")
-            .arg(a.auftragId).arg(rg.anstiegszeitS, 0, 'f', 1).arg(rg.ueberschwingenK, 0, 'f', 2)
-            .arg(rg.ueberschwingenProzent, 0, 'f', 1)
+            .arg(a.auftragId).arg(qRound64(rg.anstiegszeitS)).arg(qRound64(rg.ueberschwingenK))
+            .arg(qRound64(rg.ueberschwingenProzent))
             .arg(rg.ausgeregelt ? QString::number(rg.ausregelzeitS, 'f', 1) + QStringLiteral(" s")
                                 : tr("nicht ausgeregelt"))
-            .arg(rg.mittlereAbweichungK, 0, 'f', 2).arg(rg.maximaleAbweichungK, 0, 'f', 2);
+            .arg(qRound64(rg.mittlereAbweichungK)).arg(qRound64(rg.maximaleAbweichungK));
         if (!rg.bemerkung.isEmpty())
             t += QStringLiteral("<br>%1").arg(rg.bemerkung);
     } else {
@@ -213,7 +213,7 @@ void PidSimDialog::simuliere()
         punkte.append({erg.zeitS[i], erg.istC[i], 0, 0, 0, 0, 0, 0});
     m_plot->zeigeVergleich({{tr("Simulierte Sprungantwort"), punkte}});
     m_ergebnis->setText(tr("Simuliert: Anstiegszeit %1 s, Überschwingen %2 K")
-                            .arg(erg.anstiegszeitS, 0, 'f', 1).arg(erg.ueberschwingenK, 0, 'f', 2));
+                            .arg(qRound64(erg.anstiegszeitS)).arg(qRound64(erg.ueberschwingenK)));
 }
 
 // ---------------------------------------------------------------- BerichtDialog

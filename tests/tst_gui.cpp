@@ -21,6 +21,8 @@
 #include <QChart>
 #include <QPushButton>
 #include <QValueAxis>
+#include <QLocale>
+#include <QStyledItemDelegate>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -45,6 +47,7 @@ private slots:
     void sortierungMitDuplikatenCrashfrei();
     void protokollOhneAnmeldungSichtbar();
     void belegungsplanNurFuerAdmin();
+    void dezimalpunktIstPunkt();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -57,6 +60,7 @@ void TestGui::initTestCase()
     if (!QFileInfo::exists(dataDir + "/drucker.csv"))
         dataDir = QStringLiteral("QT-Projekt_info/PrintFarm_Daten/PrintFarm_Daten");
     QVERIFY2(QFileInfo::exists(dataDir + "/drucker.csv"), "Testdaten nicht gefunden");
+    QLocale::setDefault(QLocale::c());   // wie in main.cpp der App gesetzt
     w = new MainWindow();
     QVERIFY(w->ladeDatenordner(QDir(dataDir).absolutePath()));
 }
@@ -427,6 +431,21 @@ void TestGui::belegungsplanNurFuerAdmin()
     QCOMPARE(tab1->findChildren<QTableView*>().size(), 1);
     // Plot oben vorhanden und nimmt Breite ein
     QVERIFY(tab1->findChild<PlotWidget*>());
+}
+
+void TestGui::dezimalpunktIstPunkt()
+{
+    // Zahlen in der GUI nur als Integer (weder Komma noch Punkt als Dezimaltrenner)
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *view = tabs->widget(0)->findChild<QTableView*>();
+    auto *model = static_cast<DruckerModel*>(view->model());
+    const QVariant v = model->data(model->index(0, DruckerModel::ColBetriebsstunden), Qt::DisplayRole);
+    QVERIFY(v.typeId() == QMetaType::LongLong || v.typeId() == QMetaType::Int);  // Integer, kein double
+    auto *delegate = qobject_cast<QStyledItemDelegate*>(view->itemDelegate());
+    QVERIFY(delegate);
+    QString text = delegate->displayText(v, QLocale());
+    QVERIFY(!text.contains(QLatin1Char(',')));
+    QVERIFY(!text.contains(QLatin1Char('.')));
 }
 
 QTEST_MAIN(TestGui)
