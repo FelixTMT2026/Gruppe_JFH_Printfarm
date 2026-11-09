@@ -43,25 +43,24 @@ void PlotWidget::zeigeProtokoll(const Protokoll &p)
     auto *sIstAuf = mk(tr("Düse Ist (Aufheizen)"), QColor(255, 128, 0));
     auto *sBettAuf = mk(tr("Bett Ist (Aufheizen)"), QColor(0, 128, 255));
 
+    // Zeitachse in Minuten (Protokoll intern in Sekunden)
     for (const auto &m : p.aufheizen) {
-        sIstAuf->append(m.zeitS, m.dueseIstC);
-        sBettAuf->append(m.zeitS, m.bettIstC);
+        sIstAuf->append(m.zeitS / 60.0, m.dueseIstC);
+        sBettAuf->append(m.zeitS / 60.0, m.bettIstC);
     }
     for (const auto &m : p.druck) {
         if (!qFuzzyIsNull(m.dueseSollC))
-            sSoll->append(m.zeitS, m.dueseSollC);
-        sIst->append(m.zeitS, m.dueseIstC);
-        sBett->append(m.zeitS, m.bettIstC);
+            sSoll->append(m.zeitS / 60.0, m.dueseSollC);
+        sIst->append(m.zeitS / 60.0, m.dueseIstC);
+        sBett->append(m.zeitS / 60.0, m.bettIstC);
     }
     // Ereignis-Markierungen als senkrechte Linien
     for (const auto &ev : p.ereignisse) {
         if (ev.typ == QLatin1String("druck_start") || ev.typ == QLatin1String("pause") ||
             ev.typ == QLatin1String("druck_ende")) {
             auto *s = mk(ev.typ, Qt::gray);
-            double tmax = 0;
-            for (const auto &m : p.druck) tmax = qMax(tmax, m.zeitS);
-            s->append(ev.zeitS, 0);
-            s->append(ev.zeitS, qMax(p.dueseSollC, 250.0));
+            s->append(ev.zeitS / 60.0, 0);
+            s->append(ev.zeitS / 60.0, qMax(p.dueseSollC, 250.0));
             s->setPen(QPen(Qt::gray, 0, Qt::DashLine));
             chart()->addSeries(s);
         }
@@ -74,7 +73,7 @@ void PlotWidget::zeigeProtokoll(const Protokoll &p)
 
     chart()->createDefaultAxes();
     auto *ax = qobject_cast<QValueAxis*>(chart()->axes(Qt::Horizontal).first());
-    if (ax) ax->setTitleText(tr("Zeit [s]"));
+    if (ax) ax->setTitleText(tr("Zeit [min]"));
     auto *ay = qobject_cast<QValueAxis*>(chart()->axes(Qt::Vertical).first());
     if (ay) ay->setTitleText(tr("Temperatur [°C]"));
 }
@@ -92,12 +91,12 @@ void PlotWidget::zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> 
         s->setName(k.first);
         s->setColor(farben[i++ % 8]);
         for (const auto &m : k.second)
-            s->append(m.zeitS, nurDueseIst ? m.dueseIstC : m.bettIstC);
+            s->append(m.zeitS / 60.0, nurDueseIst ? m.dueseIstC : m.bettIstC);
         chart()->addSeries(s);
     }
     chart()->createDefaultAxes();
     auto *ax = qobject_cast<QValueAxis*>(chart()->axes(Qt::Horizontal).first());
-    if (ax) ax->setTitleText(tr("Zeit [s]"));
+    if (ax) ax->setTitleText(tr("Zeit [min]"));
     auto *ay = qobject_cast<QValueAxis*>(chart()->axes(Qt::Vertical).first());
     if (ay) ay->setTitleText(tr("Temperatur [°C]"));
 }

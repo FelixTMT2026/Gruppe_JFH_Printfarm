@@ -20,6 +20,7 @@
 #include <QLabel>
 #include <QChart>
 #include <QPushButton>
+#include <QValueAxis>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -406,6 +407,10 @@ void TestGui::protokollOhneAnmeldungSichtbar()
     emit view->doubleClicked(model->index(ziel2, 0));
     QTest::qWait(50);
     QVERIFY(!plot->chart()->series().isEmpty());
+    // Zeitachse in Minuten
+    auto *ax = qobject_cast<QValueAxis*>(plot->chart()->axes(Qt::Horizontal).first());
+    QVERIFY(ax);
+    QVERIFY(ax->titleText().contains(QStringLiteral("min")));
 }
 
 void TestGui::belegungsplanNurFuerAdmin()
