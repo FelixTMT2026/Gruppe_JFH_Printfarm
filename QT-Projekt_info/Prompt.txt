@@ -26,7 +26,7 @@ Verwende ausschließlich:
 
 Nutze keine andere Qt-Version und keine alternativen Anwendungsframeworks. Verwende kein Python, JavaScript, HTML oder QML zur Umsetzung der Anwendung. Nutze für benötigte Funktionen die geeigneten Module der angegebenen Qt-Version und die C++-Standardbibliothek.
 
-Die Anwendung muss offline funktionieren. Verwende relative Pfade und ermögliche die Auswahl des Datenordners. Beachte die vorgeschriebene Benennung von Projekt und Repository. Falls die Gruppennummer fehlt, verwende vorläufig `PrintFarm_Gruppe_XY`.
+Die Anwendung muss offline funktionieren. Verwende relative Pfade und ermögliche die Auswahl des Datenordners. Beachte die vorgeschriebene Benennung von Projekt und Repository. Verwende die Benennung `Gruppe_JFH_Printfarm`.
 
 ## Benutzeroberfläche
 
