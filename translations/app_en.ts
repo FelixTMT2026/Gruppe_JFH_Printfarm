@@ -784,71 +784,51 @@
 <context>
     <name>PlotWidget</name>
     <message>
-        <location filename="../src/plotwidget.cpp" line="12"/>
-        <source>Temperaturverlauf</source>
-        <translation>Temperature curve</translation>
-    </message>
-    <message>
-        <location filename="../src/plotwidget.cpp" line="26"/>
-        <source>Kein Protokoll ausgewählt</source>
-        <translation>No protocol selected</translation>
-    </message>
-    <message>
-        <location filename="../src/plotwidget.cpp" line="32"/>
-        <source>Temperaturverlauf Auftrag %1</source>
-        <translation>Temperature curve job %1</translation>
-    </message>
-    <message>
-        <location filename="../src/plotwidget.cpp" line="41"/>
+        <location filename="../src/plotwidget.cpp" line="139"/>
         <source>Düsentemperatur</source>
         <translation>Nozzle temperature</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="42"/>
+        <location filename="../src/plotwidget.cpp" line="140"/>
         <source>Betttemperatur</source>
         <translation>Bed temperature</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="58"/>
-        <source>Druckstart</source>
-        <translation>Print start</translation>
+        <location filename="../src/plotwidget.cpp" line="21"/>
+        <source>Adaptiv</source>
+        <translation>Adaptive</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="59"/>
+        <location filename="../src/plotwidget.cpp" line="23"/>
+        <source>Adaptive Auflösung (LTTB) umschalten</source>
+        <translation>Toggle adaptive resolution (LTTB)</translation>
+    </message>
+    <message>
+        <location filename="../src/plotwidget.cpp" line="112"/>
         <source>Pause</source>
         <translation>Pause</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="60"/>
+        <location filename="../src/plotwidget.cpp" line="113"/>
         <source>Fortsetzen</source>
         <translation>Resume</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="61"/>
+        <location filename="../src/plotwidget.cpp" line="114"/>
         <source>Abbruch</source>
         <translation>Abort</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="62"/>
-        <source>Druckende</source>
-        <translation>Print end</translation>
-    </message>
-    <message>
-        <location filename="../src/plotwidget.cpp" line="75"/>
-        <location filename="../src/plotwidget.cpp" line="98"/>
+        <location filename="../src/plotwidget.cpp" line="158"/>
+        <location filename="../src/plotwidget.cpp" line="190"/>
         <source>Zeit [min]</source>
         <translation>Time [min]</translation>
     </message>
     <message>
-        <location filename="../src/plotwidget.cpp" line="77"/>
-        <location filename="../src/plotwidget.cpp" line="100"/>
+        <location filename="../src/plotwidget.cpp" line="163"/>
+        <location filename="../src/plotwidget.cpp" line="195"/>
         <source>Temperatur [°C]</source>
         <translation>Temperature [°C]</translation>
-    </message>
-    <message>
-        <location filename="../src/plotwidget.cpp" line="84"/>
-        <source>Vergleich Sprungantworten</source>
-        <translation>Compare step responses</translation>
     </message>
 </context>
 <context>
@@ -887,72 +867,72 @@
         <translation>Protocol / History / Evaluation</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="81"/>
+        <location filename="../src/teilewidget.cpp" line="82"/>
         <source>Protokoll %1 im Hintergrund geladen (Cache).</source>
         <translation>Protocol %1 loaded in background (cache).</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="92"/>
+        <location filename="../src/teilewidget.cpp" line="93"/>
         <source>Protokollfehler %1: %2</source>
         <translation>Protocol error %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="104"/>
+        <location filename="../src/teilewidget.cpp" line="105"/>
         <source>&lt;b&gt;%1&lt;/b&gt; - %2 auf %3 | Material: %4 | Soll: %5 min, %6 g | Ergebnis: %7%8</source>
         <translation>&lt;b&gt;%1&lt;/b&gt; - %2 auf %3 | Material: %4 | Soll: %5 min, %6 g | Ergebnis: %7%8</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="110"/>
+        <location filename="../src/teilewidget.cpp" line="111"/>
         <source>Kosten: Material %1 € + Maschine %2 € = %3 €</source>
         <translation>Costs: material %1 € + machine %2 € = %3 €</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="122"/>
+        <location filename="../src/teilewidget.cpp" line="123"/>
         <source>&lt;br&gt;&lt;i&gt;Kein Protokoll verfügbar: %1&lt;/i&gt;</source>
         <translation>&lt;br&gt;&lt;i&gt;Kein Protokoll verfügbar: %1&lt;/i&gt;</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="128"/>
+        <location filename="../src/teilewidget.cpp" line="129"/>
         <source>&lt;br&gt;Regelgüte: tr=%1 s, Überschwingen=%2 K (%3 %), Ausregelzeit=%4, Ø-Abweichung=%5 K, max=%6 K</source>
         <translation>&lt;br&gt;Regelgüte: tr=%1 s, Überschwingen=%2 K (%3 %), Ausregelzeit=%4, Ø-Abweichung=%5 K, max=%6 K</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="131"/>
+        <location filename="../src/teilewidget.cpp" line="132"/>
         <source>nicht ausgeregelt</source>
         <translation>not settled</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="136"/>
+        <location filename="../src/teilewidget.cpp" line="137"/>
         <source>Regler schlecht eingestellt</source>
         <translation>Controller poorly tuned</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="139"/>
+        <location filename="../src/teilewidget.cpp" line="140"/>
         <source>Auftrag %1: %2</source>
         <translation>Job %1: %2</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="173"/>
+        <location filename="../src/teilewidget.cpp" line="174"/>
         <source>Rechte</source>
         <translation>Permissions</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="174"/>
+        <location filename="../src/teilewidget.cpp" line="175"/>
         <source>Der Belegungsplan ist nur für die Rolle „admin“ verfügbar.</source>
         <translation>The schedule is only available for the „admin“ role.</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="187"/>
+        <location filename="../src/teilewidget.cpp" line="188"/>
         <source>Greedy-Planung: %1 geplante Aufträge auf %2 Zuweisungen verteilt</source>
         <translation>Greedy planning: %1 planned jobs distributed to %2 assignments</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="189"/>
+        <location filename="../src/teilewidget.cpp" line="190"/>
         <source>Planung: %1 Zuweisungen (siehe Belegungsplan).</source>
         <translation>Planning: %1 assignments (see schedule).</translation>
     </message>
     <message>
-        <location filename="../src/teilewidget.cpp" line="193"/>
+        <location filename="../src/teilewidget.cpp" line="194"/>
         <source>Belegungsplan (Gantt) - geplante Aufträge</source>
         <translation>Schedule (Gantt) - planned jobs</translation>
     </message>

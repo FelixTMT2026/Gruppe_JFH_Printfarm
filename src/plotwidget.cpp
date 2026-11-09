@@ -4,6 +4,8 @@
 #include <QLineSeries>
 #include <QApplication>
 #include <QPalette>
+#include <QCheckBox>
+#include <climits>
 
 PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
 {
@@ -14,6 +16,15 @@ PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
     // Chart-Theme folgt dem App-Theme (hell/dunkel)
     setDarkMode(qApp->palette().color(QPalette::Window).lightness() < 128);
     setRenderHint(QPainter::Antialiasing);
+
+    // Toggle oben rechts: adaptive (LTTB) vs. Standard (alle Punkte)
+    m_adaptivBox = new QCheckBox(tr("Adaptiv"), this);
+    m_adaptivBox->setChecked(true);
+    m_adaptivBox->setToolTip(tr("Adaptive Auflösung (LTTB) umschalten"));
+    connect(m_adaptivBox, &QCheckBox::toggled, this, [this](bool on) {
+        m_adaptiv = on;
+        render();
+    });
 }
 
 void PlotWidget::setDarkMode(bool dark)
@@ -71,6 +82,8 @@ void PlotWidget::leeren()
 void PlotWidget::resizeEvent(QResizeEvent *e)
 {
     QChartView::resizeEvent(e);
+    if (m_adaptivBox)
+        m_adaptivBox->move(width() - m_adaptivBox->width() - 8, 8);   // Toggle oben rechts halten
     if (m_rohdaten)
         render();   // bei Skalierung mit neuer Breite adaptiv neu decimieren
 }
@@ -120,8 +133,9 @@ void PlotWidget::render()
         s->setColor(c);
         return s;
     };
-    // adaptiv für die visuelle Skalierung: Schwelle = aktuelle Plot-Breite (~1 Punkt/Pixel)
-    const int schwelle = qMax(200, width());
+    // adaptiv für die visuelle Skalierung: Schwelle = aktuelle Plot-Breite (~1 Punkt/Pixel);
+    // im Standard-Modus (Toggle aus) werden alle Punkte gezeichnet
+    const int schwelle = m_adaptiv ? qMax(200, width()) : INT_MAX;
     auto *sDuese = mk(tr("Düsentemperatur"), QColor(214, 69, 49));
     auto *sBett = mk(tr("Betttemperatur"), QColor(41, 128, 185));
     for (const auto &pt : lttb(m_duesePts, schwelle))

@@ -24,6 +24,7 @@
 #include <QLocale>
 #include <QStyledItemDelegate>
 #include <QLineSeries>
+#include <QCheckBox>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -54,6 +55,7 @@ private slots:
     void singleClickAktualisiertProtokoll();
     void lttbAdaptiv();
     void resizeDecimiertAdaptiv();
+    void adaptivToggle();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -649,6 +651,39 @@ void TestGui::resizeDecimiertAdaptiv()
     plot.resize(1200, 400);  // groß skalieren
     QTest::qWait(20);
     QVERIFY(countFor() > klein);   // breiter -> wieder mehr Detail
+}
+
+void TestGui::adaptivToggle()
+{
+    PlotWidget plot;
+    plot.resize(800, 400);
+    plot.show();
+    QTest::qWait(20);
+    Protokoll p;
+    p.auftragId = "JT";
+    p.dueseSollC = 210;
+    for (int i = 0; i < 3000; ++i) {
+        Messpunkt m; m.zeitS = i; m.dueseIstC = 100 + (i % 50); m.bettIstC = 60;
+        p.aufheizen.append(m);
+    }
+    plot.zeigeProtokoll(p);
+    auto count = [&]() -> int {
+        for (auto *s : plot.chart()->series())
+            if (s->name() == QString::fromUtf8("Düsentemperatur"))
+                return int(static_cast<QLineSeries*>(s)->points().size());
+        return 0;
+    };
+    auto *box = plot.findChild<QCheckBox*>();
+    QVERIFY(box);
+    QVERIFY(box->isChecked());            // default: adaptiv an
+    const int adaptiv = count();
+    QVERIFY(adaptiv < 3000);              // decimiert
+    box->setChecked(false);               // Standard: alle Punkte
+    QTest::qWait(20);
+    QCOMPARE(count(), 3000);
+    box->setChecked(true);                // zurück zu adaptiv
+    QTest::qWait(20);
+    QCOMPARE(count(), adaptiv);
 }
 
 QTEST_MAIN(TestGui)
