@@ -1,0 +1,237 @@
+wartung_id,drucker_id,datum,art,dauer_min,bemerkung
+W0001,D051,2026-03-04,reinigung,20,Bauplattform gereinigt
+W0002,D054,2026-03-04,schmierung,10,Linearführungen geschmiert
+W0003,D043,2026-03-05,kalibrierung,90,Bett neu nivelliert
+W0004,D064,2026-03-05,kalibrierung,10,Bett neu nivelliert
+W0005,D034,2026-03-07,schmierung,90,Linearführungen geschmiert
+W0006,D039,2026-03-07,riemen_spannen,15,Riemen nachgespannt
+W0007,D020,2026-03-08,reinigung,90,Bauplattform gereinigt
+W0008,D047,2026-03-09,duesenwechsel,20,Düse getauscht
+W0009,D034,2026-03-11,schmierung,45,Linearführungen geschmiert
+W0010,D057,2026-03-11,riemen_spannen,30,Riemen nachgespannt
+W0011,D032,2026-03-12,kalibrierung,15,Bett neu nivelliert
+W0012,D073,2026-03-12,kalibrierung,15,Bett neu nivelliert
+W0013,D037,2026-03-13,schmierung,90,Linearführungen geschmiert
+W0014,D061,2026-03-14,pid_tuning,20,PID-Autotune durchgeführt
+W0015,D073,2026-03-14,kalibrierung,30,Bett neu nivelliert
+W0016,D029,2026-03-15,kalibrierung,20,Bett neu nivelliert
+W0017,D049,2026-03-15,riemen_spannen,30,Riemen nachgespannt
+W0018,D058,2026-03-16,kalibrierung,60,Bett neu nivelliert
+W0019,D002,2026-03-17,schmierung,10,Linearführungen geschmiert
+W0020,D054,2026-03-17,reinigung,15,Bauplattform gereinigt
+W0021,D058,2026-03-17,duesenwechsel,45,Düse getauscht
+W0022,D072,2026-03-17,reinigung,60,Bauplattform gereinigt
+W0023,D003,2026-03-18,duesenwechsel,30,Düse getauscht
+W0024,D072,2026-03-19,duesenwechsel,45,Düse getauscht
+W0025,D077,2026-03-19,riemen_spannen,15,Riemen nachgespannt
+W0026,D002,2026-03-20,kalibrierung,30,Bett neu nivelliert
+W0027,D041,2026-03-20,schmierung,10,Linearführungen geschmiert
+W0028,D042,2026-03-22,riemen_spannen,90,Riemen nachgespannt
+W0029,D079,2026-03-26,duesenwechsel,45,Düse getauscht
+W0030,D043,2026-03-27,duesenwechsel,15,Düse getauscht
+W0031,D055,2026-03-27,reinigung,90,Bauplattform gereinigt
+W0032,D018,2026-03-28,reinigung,15,Bauplattform gereinigt
+W0033,D033,2026-03-28,riemen_spannen,15,Riemen nachgespannt
+W0034,D057,2026-03-28,schmierung,90,Linearführungen geschmiert
+W0035,D059,2026-03-28,reinigung,10,Bauplattform gereinigt
+W0036,D020,2026-03-29,riemen_spannen,45,Riemen nachgespannt
+W0037,D018,2026-03-30,riemen_spannen,10,Riemen nachgespannt
+W0038,D028,2026-03-30,duesenwechsel,30,Düse getauscht
+W0039,D051,2026-03-30,reinigung,30,Bauplattform gereinigt
+W0040,D062,2026-03-30,reinigung,45,Bauplattform gereinigt
+W0041,D048,2026-03-31,duesenwechsel,45,Düse getauscht
+W0042,D070,2026-04-04,kalibrierung,90,Bett neu nivelliert
+W0043,D035,2026-04-06,riemen_spannen,45,Riemen nachgespannt
+W0044,D036,2026-04-06,kalibrierung,90,Bett neu nivelliert
+W0045,D043,2026-04-07,duesenwechsel,20,Düse getauscht
+W0046,D054,2026-04-07,reinigung,20,Bauplattform gereinigt
+W0047,D012,2026-04-09,reparatur,30,Heizpatrone getauscht
+W0048,D052,2026-04-09,kalibrierung,10,Bett neu nivelliert
+W0049,D043,2026-04-11,reinigung,30,Bauplattform gereinigt
+W0050,D040,2026-04-12,reinigung,15,Bauplattform gereinigt
+W0051,D003,2026-04-13,duesenwechsel,60,Düse getauscht
+W0052,D001,2026-04-14,reinigung,20,Bauplattform gereinigt
+W0053,D036,2026-04-14,schmierung,60,Linearführungen geschmiert
+W0054,D057,2026-04-15,kalibrierung,15,Bett neu nivelliert
+W0055,D057,2026-04-15,reinigung,15,Bauplattform gereinigt
+W0056,D037,2026-04-16,reinigung,90,Bauplattform gereinigt
+W0057,D014,2026-04-17,kalibrierung,20,Bett neu nivelliert
+W0058,D033,2026-04-17,duesenwechsel,30,Düse getauscht
+W0059,D018,2026-04-18,riemen_spannen,20,Riemen nachgespannt
+W0060,D006,2026-04-23,reparatur,60,Heizpatrone getauscht
+W0061,D071,2026-04-23,reinigung,90,Bauplattform gereinigt
+W0062,D023,2026-04-24,kalibrierung,10,Bett neu nivelliert
+W0063,D006,2026-04-25,kalibrierung,45,Bett neu nivelliert
+W0064,D042,2026-04-25,kalibrierung,45,Bett neu nivelliert
+W0065,D042,2026-04-25,kalibrierung,15,Bett neu nivelliert
+W0066,D070,2026-04-27,reinigung,30,Bauplattform gereinigt
+W0067,D027,2026-04-29,duesenwechsel,90,Düse getauscht
+W0068,D020,2026-05-01,duesenwechsel,90,Düse getauscht
+W0069,D050,2026-05-01,reinigung,45,Bauplattform gereinigt
+W0070,D074,2026-05-01,riemen_spannen,60,Riemen nachgespannt
+W0071,D002,2026-05-04,reinigung,20,Bauplattform gereinigt
+W0072,D056,2026-05-04,duesenwechsel,90,Düse getauscht
+W0073,D017,2026-05-06,riemen_spannen,20,Riemen nachgespannt
+W0074,D042,2026-05-06,duesenwechsel,60,Düse getauscht
+W0075,D074,2026-05-08,kalibrierung,45,Bett neu nivelliert
+W0076,D007,2026-05-09,reinigung,60,Bauplattform gereinigt
+W0077,D072,2026-05-09,duesenwechsel,30,Düse getauscht
+W0078,D039,2026-05-11,reinigung,60,Bauplattform gereinigt
+W0079,D013,2026-05-12,reinigung,60,Bauplattform gereinigt
+W0080,D004,2026-05-13,riemen_spannen,90,Riemen nachgespannt
+W0081,D021,2026-05-13,kalibrierung,20,Bett neu nivelliert
+W0082,D042,2026-05-13,duesenwechsel,20,Düse getauscht
+W0083,D018,2026-05-14,kalibrierung,90,Bett neu nivelliert
+W0084,D074,2026-05-14,reparatur,60,Heizpatrone getauscht
+W0085,D022,2026-05-15,reinigung,20,Bauplattform gereinigt
+W0086,D050,2026-05-15,schmierung,10,Linearführungen geschmiert
+W0087,D019,2026-05-16,kalibrierung,15,Bett neu nivelliert
+W0088,D024,2026-05-16,schmierung,90,Linearführungen geschmiert
+W0089,D048,2026-05-17,duesenwechsel,10,Düse getauscht
+W0090,D062,2026-05-17,reinigung,90,Bauplattform gereinigt
+W0091,D016,2026-05-18,riemen_spannen,90,Riemen nachgespannt
+W0092,D032,2026-05-20,riemen_spannen,20,Riemen nachgespannt
+W0093,D057,2026-05-20,riemen_spannen,90,Riemen nachgespannt
+W0094,D039,2026-05-23,kalibrierung,90,Bett neu nivelliert
+W0095,D030,2026-05-25,riemen_spannen,20,Riemen nachgespannt
+W0096,D040,2026-05-25,kalibrierung,30,Bett neu nivelliert
+W0097,D017,2026-05-29,duesenwechsel,45,Düse getauscht
+W0098,D037,2026-06-01,kalibrierung,90,Bett neu nivelliert
+W0099,D027,2026-06-02,duesenwechsel,60,Düse getauscht
+W0100,D038,2026-06-02,duesenwechsel,20,Düse getauscht
+W0101,D023,2026-06-03,schmierung,45,Linearführungen geschmiert
+W0102,D013,2026-06-04,kalibrierung,30,Bett neu nivelliert
+W0103,D080,2026-06-04,kalibrierung,15,Bett neu nivelliert
+W0104,D029,2026-06-05,kalibrierung,45,Bett neu nivelliert
+W0105,D044,2026-06-05,schmierung,10,Linearführungen geschmiert
+W0106,D076,2026-06-05,kalibrierung,15,Bett neu nivelliert
+W0107,D080,2026-06-06,riemen_spannen,90,Riemen nachgespannt
+W0108,D079,2026-06-07,kalibrierung,20,Bett neu nivelliert
+W0109,D020,2026-06-08,riemen_spannen,30,Riemen nachgespannt
+W0110,D071,2026-06-08,duesenwechsel,90,Düse getauscht
+W0111,D079,2026-06-09,riemen_spannen,45,Riemen nachgespannt
+W0112,D043,2026-06-13,schmierung,20,Linearführungen geschmiert
+W0113,D073,2026-06-13,duesenwechsel,45,Düse getauscht
+W0114,D036,2026-06-17,riemen_spannen,10,Riemen nachgespannt
+W0115,D076,2026-06-17,riemen_spannen,20,Riemen nachgespannt
+W0116,D019,2026-06-18,reinigung,10,Bauplattform gereinigt
+W0117,D049,2026-06-20,duesenwechsel,10,Düse getauscht
+W0118,D008,2026-06-21,duesenwechsel,60,Düse getauscht
+W0119,D015,2026-06-22,duesenwechsel,90,Düse getauscht
+W0120,D062,2026-06-24,duesenwechsel,15,Düse getauscht
+W0121,D036,2026-06-25,reinigung,10,Bauplattform gereinigt
+W0122,D051,2026-06-25,kalibrierung,20,Bett neu nivelliert
+W0123,D029,2026-06-26,kalibrierung,20,Bett neu nivelliert
+W0124,D034,2026-06-26,duesenwechsel,45,Düse getauscht
+W0125,D028,2026-06-28,reinigung,20,Bauplattform gereinigt
+W0126,D067,2026-06-28,duesenwechsel,30,Düse getauscht
+W0127,D080,2026-06-28,kalibrierung,30,Bett neu nivelliert
+W0128,D060,2026-06-29,reinigung,30,Bauplattform gereinigt
+W0129,D039,2026-06-30,reinigung,15,Bauplattform gereinigt
+W0130,D048,2026-07-01,pid_tuning,45,PID-Autotune durchgeführt
+W0131,D071,2026-07-01,reinigung,30,Bauplattform gereinigt
+W0132,D077,2026-07-01,kalibrierung,60,Bett neu nivelliert
+W0133,D025,2026-07-03,schmierung,30,Linearführungen geschmiert
+W0134,D002,2026-07-04,kalibrierung,45,Bett neu nivelliert
+W0135,D068,2026-07-07,riemen_spannen,45,Riemen nachgespannt
+W0136,D004,2026-07-09,schmierung,10,Linearführungen geschmiert
+W0137,D044,2026-07-09,reinigung,30,Bauplattform gereinigt
+W0138,D058,2026-07-09,kalibrierung,10,Bett neu nivelliert
+W0139,D003,2026-07-10,kalibrierung,15,Bett neu nivelliert
+W0140,D049,2026-07-10,duesenwechsel,15,Düse getauscht
+W0141,D040,2026-07-11,pid_tuning,60,PID-Autotune durchgeführt
+W0142,D050,2026-07-11,reinigung,15,Bauplattform gereinigt
+W0143,D061,2026-07-13,kalibrierung,30,Bett neu nivelliert
+W0144,D027,2026-07-15,kalibrierung,90,Bett neu nivelliert
+W0145,D012,2026-07-16,duesenwechsel,20,Düse getauscht
+W0146,D019,2026-07-16,duesenwechsel,20,Düse getauscht
+W0147,D073,2026-07-16,reinigung,45,Bauplattform gereinigt
+W0148,D079,2026-07-16,schmierung,20,Linearführungen geschmiert
+W0149,D015,2026-07-17,kalibrierung,60,Bett neu nivelliert
+W0150,D059,2026-07-17,reparatur,10,Heizpatrone getauscht
+W0151,D073,2026-07-18,reinigung,90,Bauplattform gereinigt
+W0152,D056,2026-07-21,reinigung,90,Bauplattform gereinigt
+W0153,D045,2026-07-22,duesenwechsel,20,Düse getauscht
+W0154,D066,2026-07-22,schmierung,30,Linearführungen geschmiert
+W0155,D011,2026-07-23,reinigung,90,Bauplattform gereinigt
+W0156,D068,2026-07-24,reinigung,30,Bauplattform gereinigt
+W0157,D037,2026-07-25,reparatur,45,Heizpatrone getauscht
+W0158,D002,2026-07-26,schmierung,10,Linearführungen geschmiert
+W0159,D010,2026-07-26,duesenwechsel,45,Düse getauscht
+W0160,D047,2026-07-28,riemen_spannen,20,Riemen nachgespannt
+W0161,D015,2026-07-29,duesenwechsel,30,Düse getauscht
+W0162,D013,2026-07-30,pid_tuning,45,PID-Autotune durchgeführt
+W0163,D028,2026-07-31,reinigung,90,Bauplattform gereinigt
+W0164,D031,2026-07-31,kalibrierung,20,Bett neu nivelliert
+W0165,D074,2026-07-31,riemen_spannen,30,Riemen nachgespannt
+W0166,D078,2026-08-01,reinigung,60,Bauplattform gereinigt
+W0167,D011,2026-08-02,duesenwechsel,60,Düse getauscht
+W0168,D053,2026-08-06,reinigung,45,Bauplattform gereinigt
+W0169,D075,2026-08-07,reinigung,90,Bauplattform gereinigt
+W0170,D001,2026-08-08,pid_tuning,15,PID-Autotune durchgeführt
+W0171,D009,2026-08-08,riemen_spannen,20,Riemen nachgespannt
+W0172,D068,2026-08-08,reinigung,30,Bauplattform gereinigt
+W0173,D070,2026-08-08,duesenwechsel,60,Düse getauscht
+W0174,D075,2026-08-09,reinigung,30,Bauplattform gereinigt
+W0175,D080,2026-08-09,kalibrierung,15,Bett neu nivelliert
+W0176,D021,2026-08-10,kalibrierung,60,Bett neu nivelliert
+W0177,D011,2026-08-11,riemen_spannen,45,Riemen nachgespannt
+W0178,D030,2026-08-11,pid_tuning,90,PID-Autotune durchgeführt
+W0179,D038,2026-08-11,duesenwechsel,15,Düse getauscht
+W0180,D061,2026-08-11,kalibrierung,45,Bett neu nivelliert
+W0181,D054,2026-08-12,reinigung,90,Bauplattform gereinigt
+W0182,D028,2026-08-14,riemen_spannen,30,Riemen nachgespannt
+W0183,D003,2026-08-15,kalibrierung,90,Bett neu nivelliert
+W0184,D066,2026-08-15,schmierung,30,Linearführungen geschmiert
+W0185,D051,2026-08-18,duesenwechsel,45,Düse getauscht
+W0186,D075,2026-08-19,duesenwechsel,60,Düse getauscht
+W0187,D035,2026-08-21,kalibrierung,90,Bett neu nivelliert
+W0188,D051,2026-08-21,reinigung,60,Bauplattform gereinigt
+W0189,D031,2026-08-23,duesenwechsel,30,Düse getauscht
+W0190,D046,2026-08-24,riemen_spannen,60,Riemen nachgespannt
+W0191,D038,2026-08-27,reinigung,30,Bauplattform gereinigt
+W0192,D056,2026-08-28,duesenwechsel,45,Düse getauscht
+W0193,D005,2026-08-30,riemen_spannen,15,Riemen nachgespannt
+W0194,D006,2026-08-30,duesenwechsel,15,Düse getauscht
+W0195,D052,2026-08-30,duesenwechsel,10,Düse getauscht
+W0196,D024,2026-08-31,reinigung,30,Bauplattform gereinigt
+W0197,D026,2026-09-01,duesenwechsel,15,Düse getauscht
+W0198,D052,2026-09-01,duesenwechsel,20,Düse getauscht
+W0199,D030,2026-09-02,kalibrierung,15,Bett neu nivelliert
+W0200,D063,2026-09-03,kalibrierung,60,Bett neu nivelliert
+W0201,D039,2026-09-04,reinigung,60,Bauplattform gereinigt
+W0202,D072,2026-09-06,reinigung,90,Bauplattform gereinigt
+W0203,D080,2026-09-06,riemen_spannen,20,Riemen nachgespannt
+W0204,D027,2026-09-10,reparatur,45,Heizpatrone getauscht
+W0205,D058,2026-09-10,riemen_spannen,10,Riemen nachgespannt
+W0206,D001,2026-09-11,duesenwechsel,60,Düse getauscht
+W0207,D027,2026-09-11,reinigung,45,Bauplattform gereinigt
+W0208,D071,2026-09-11,duesenwechsel,45,Düse getauscht
+W0209,D076,2026-09-11,duesenwechsel,90,Düse getauscht
+W0210,D052,2026-09-13,duesenwechsel,10,Düse getauscht
+W0211,D058,2026-09-13,duesenwechsel,60,Düse getauscht
+W0212,D063,2026-09-13,reinigung,90,Bauplattform gereinigt
+W0213,D050,2026-09-16,duesenwechsel,15,Düse getauscht
+W0214,D060,2026-09-16,kalibrierung,60,Bett neu nivelliert
+W0215,D040,2026-09-17,duesenwechsel,60,Düse getauscht
+W0216,D059,2026-09-19,pid_tuning,45,PID-Autotune durchgeführt
+W0217,D028,2026-09-21,reinigung,30,Bauplattform gereinigt
+W0218,D035,2026-09-21,schmierung,20,Linearführungen geschmiert
+W0219,D032,2026-09-25,kalibrierung,90,Bett neu nivelliert
+W0220,D068,2026-09-26,kalibrierung,30,Bett neu nivelliert
+W0221,D075,2026-09-26,reinigung,15,Bauplattform gereinigt
+W0222,D065,2026-09-26,reparatur,60,Heizpatrone neu befestigt
+W0223,D040,2026-09-27,reinigung,60,Bauplattform gereinigt
+W0224,D046,2026-09-27,duesenwechsel,90,Düse getauscht
+W0225,D069,2026-09-27,kalibrierung,10,Bett neu nivelliert
+W0226,D077,2026-09-27,reinigung,90,Bauplattform gereinigt
+W0227,D003,2026-09-28,duesenwechsel,60,Düse getauscht
+W0228,D074,2026-09-28,reinigung,15,Bauplattform gereinigt
+W0229,D077,2026-09-28,schmierung,90,Linearführungen geschmiert
+W0230,D065,2026-10-01,reinigung,60,Bauplattform gereinigt
+W0231,D022,2026-10-02,reparatur,60,Heizpatrone neu befestigt
+W0232,D046,2026-10-04,schmierung,45,Linearführungen geschmiert
+W0233,D047,2026-10-04,reinigung,15,Bauplattform gereinigt
+W0234,D060,2026-10-05,schmierung,60,Linearführungen geschmiert
+W0235,D032,2026-10-06,kalibrierung,90,Bett neu nivelliert
+W0236,D068,2026-10-06,reparatur,60,Heizpatrone neu befestigt

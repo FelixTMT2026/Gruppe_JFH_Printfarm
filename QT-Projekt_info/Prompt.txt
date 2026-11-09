@@ -1,0 +1,131 @@
+Entwickle eine vollständige, lauffähige Desktop-Anwendung für unser Hochschulprojekt „PrintFarm“. Berücksichtige dazu die folgenden beigefügten Dateien:
+
+- Die vollständige Aufgabenstellung einschließlich aller Anhänge.
+- Zwei grafische Layoutentwürfe: Lightmode und Darkmode.
+- Die globalen CSV-Dateien mit den Projektdaten.
+
+Lies die Aufgabenstellung vollständig und untersuche die beigefügten Dateien sorgfältig, bevor du mit der Implementierung beginnst.
+
+## Verbindliche Ziele
+
+Setze sämtliche Mindestanforderungen und alle zehn im Abschnitt „Erweiterungen“ beschriebenen Erweiterungen vollständig um. Berücksichtige auch die dort als optional genannten Teilfunktionen, beispielsweise das Gantt-Diagramm zur Auftragsplanung.
+
+Implementiere zusätzlich die drei in der Aufgabenstellung beispielhaft genannten eigenen Erweiterungen: PID-Simulation, Kostenrechnung pro Auftrag und Berichtsexport.
+
+Die Aufgabenstellung ist die verbindliche Grundlage für Funktionen, Berechnungen, Datenverarbeitung, Abgabe und Dokumentation. Erstelle daraus eine Anforderungsmatrix und prüfe damit die Vollständigkeit. Wiederhole die Aufgabenstellung nicht ausführlich in deiner Antwort.
+
+## Entwicklungsumgebung
+
+Verwende ausschließlich:
+
+- C++ als Programmiersprache der Anwendung.
+- Qt Creator 20.0.x.
+- Das Kit Desktop Qt 6.11.x MinGW 64-bit.
+- Qt Widgets für die Benutzeroberfläche.
+- CMake als Buildsystem.
+
+Nutze keine andere Qt-Version und keine alternativen Anwendungsframeworks. Verwende kein Python, JavaScript, HTML oder QML zur Umsetzung der Anwendung. Nutze für benötigte Funktionen die geeigneten Module der angegebenen Qt-Version und die C++-Standardbibliothek.
+
+Die Anwendung muss offline funktionieren. Verwende relative Pfade und ermögliche die Auswahl des Datenordners. Beachte die vorgeschriebene Benennung von Projekt und Repository. Falls die Gruppennummer fehlt, verwende vorläufig `PrintFarm_Gruppe_XY`.
+
+## Benutzeroberfläche
+
+Orientiere dich an den beiden beigefügten Layoutentwürfen. Implementiere sowohl Lightmode als auch Darkmode mit einer Umschaltmöglichkeit zur Laufzeit.
+
+Es gibt genau vier Haupttabs in dieser Reihenfolge:
+
+1. Druckerliste
+2. Gedruckte Teile
+3. Material
+4. Fehlerlog
+
+Übernimm Aufbau, Farbgebung und Designsprache möglichst genau. Verwende flexible Qt-Layouts, damit die Oberfläche auch bei unterschiedlichen Fenstergrößen und Bildschirm-Skalierungen funktioniert.
+
+Die Layoutbilder sind Gestaltungsvorlagen. Die darin enthaltenen Daten, Zahlen und Kurven sind keine verbindlichen Projektdaten. Fehlende Bedienelemente für Anforderungen aus der Aufgabenstellung müssen sinnvoll ergänzt werden.
+
+Ordne zusätzliche Funktionen den vier Tabs, Unteransichten, Dialogen, Kontextmenüs oder der Menüleiste zu. Erzeuge keine weiteren Haupttabs.
+
+Im Tab „Gedruckte Teile“ müssen auch geplante, abgebrochene und fehlgeschlagene Aufträge erreichbar sein. Im Fehlerlog müssen sowohl Druckfehler als auch Import-, Validierungs- und Dateifehler verständlich unterscheidbar sein.
+
+## Daten und noch fehlende Dateien
+
+Verwende die beigefügten globalen CSV-Dateien als tatsächliche Datengrundlage. Prüfe deren Struktur, Inhalte und Beziehungen. Berücksichtige fehlerhafte Datensätze und implementiere robustes Einlesen und Exportieren.
+
+Die JSON-Druckprotokolle und zugehörigen Indexdateien sind zunächst möglicherweise nicht beigefügt. Falls sie fehlen:
+
+- Implementiere die entsprechenden Funktionen anhand des in der Aufgabenstellung beschriebenen Formats vollständig.
+- Sorge dafür, dass die Anwendung ohne Protokolle startet und Stammdaten weiterhin nutzbar bleiben.
+- Zeige bei fehlenden Protokollen verständliche Hinweise.
+- Erfinde keine echten Druckverläufe, Analyseergebnisse oder Indexeinträge.
+- Fordere die fehlenden Originaldateien gezielt für Integrationstests und das abschließende Abgabepaket an.
+- Arbeite währenddessen an allen unabhängig umsetzbaren Funktionen weiter.
+
+Kleine, eindeutig getrennte Testdatensätze sind für automatisierte Tests zulässig. Sie dürfen nicht als Originaldaten oder als Ersatz für die geforderte Datenbasis ausgegeben werden.
+
+## Architektur und Codequalität
+
+Entwickle eine übersichtliche, objektorientierte und für Studierende verständliche Architektur. Trenne insbesondere GUI, Datenhaltung, Dateiimport/-export, Datenbankzugriff und fachliche Berechnungen.
+
+Nutze geeignete Qt-Modelle für Tabellen, Suche, Sortierung und Filter. Verwende klare Besitzverhältnisse, RAII, Qt-Parent-Ownership und dort, wo sinnvoll, Smart Pointer.
+
+Vermeide eine überladene MainWindow-Klasse, unnötige globale Variablen und überkomplizierte Strukturen. Kommentiere nicht offensichtliche Entscheidungen und fachliche Algorithmen verständlich.
+
+Implementiere echte Funktionen statt Platzhalter. Jede sichtbare Schaltfläche muss die vorgesehene Aktion ausführen oder mit einem nachvollziehbaren Grund deaktiviert sein.
+
+Achte besonders auf:
+
+- Korrekte Regelgüteberechnungen nach Aufgabenstellung, einschließlich Pausen und Wiederaufheizen.
+- Tatsächliche Zeitstempel statt angenommener gleichmäßiger Abtastung.
+- Aussagekräftige Zustände bei fehlenden oder nicht berechenbaren Kennzahlen.
+- Hintergrundverarbeitung ohne blockierende GUI.
+- Konsistente Änderungen in allen Ansichten.
+- Rechteprüfungen auch außerhalb der Benutzeroberfläche.
+- Klar definierte Datenhaltung beim Wechsel zwischen CSV und SQLite.
+- Nachvollziehbare Annahmen für Simulation, Fehlererkennung und Kostenrechnung.
+- Unterscheidung zwischen Messwerten, Sollwerten, Schätzungen und simulierten Ergebnissen.
+
+Überschreibe die bereitgestellten Originaldaten nicht stillschweigend.
+
+## Vorgehensweise
+
+Arbeite schrittweise, führe die Umsetzung aber selbstständig weiter und stoppe nicht nach jedem Teilschritt für eine Freigabe.
+
+1. Analysiere Aufgabenstellung, Layouts und CSV-Dateien.
+2. Erstelle eine kompakte Anforderungsmatrix und einen sinnvollen Implementierungsplan.
+3. Lege Klassenstruktur, Datenmodell und Zuordnung der Funktionen zu den vier Tabs fest.
+4. Erstelle ein kompilierbares Projektgrundgerüst.
+5. Implementiere zunächst sämtliche Mindestanforderungen.
+6. Ergänze anschließend alle geforderten Erweiterungen.
+7. Prüfe Zusammenspiel, Fehlerbehandlung, Berechnungen und Oberfläche.
+8. Erstelle Dokumentation und Abgabepaket, soweit die dafür benötigten Originaldateien vorliegen.
+
+Triff gewöhnliche technische Entscheidungen selbstständig. Stelle nur gezielte Rückfragen zu tatsächlich fehlenden Informationen. Halte wichtige Entscheidungen und durchgeführte Prüfungen für die spätere Dokumentation fest.
+
+## Tests und Nachweise
+
+Erstelle sinnvolle automatisierte Tests mit Qt Test, insbesondere für Dateiimport/-export, Validierung, Regelgüte, Pausenbehandlung, Rechte, Auftragsplanung und Persistenz.
+
+Prüfe die Anwendung zusätzlich mit den bereitgestellten Originaldaten. Kontrolliere beide Darstellungsmodi, die Sprachumschaltung, Größenänderungen des Fensters und zentrale Bedienabläufe.
+
+Verwende für Build und Ausführung ausschließlich das angegebene Qt-Kit. Falls es in deiner Arbeitsumgebung nicht verfügbar ist, weiche nicht auf eine andere Qt-Version aus. Benenne dann präzise, welche Prüfungen möglich waren und welche wir lokal durchführen müssen. Behaupte keine erfolgreiche Kompilierung oder Funktionsprüfung ohne entsprechenden Nachweis.
+
+Markiere Anforderungen erst dann als vollständig geprüft, wenn dafür tatsächlich ausreichende Tests durchgeführt wurden. Unterscheide zwischen „implementiert“, „getestet“ und „wegen fehlender Daten oder Umgebung noch nicht überprüft“.
+
+## Dokumentation und Lieferung
+
+Liefere das vollständige Projekt mit allen benötigten Quellen, Headern, UI-Dateien, Ressourcen, Übersetzungen und Tests.
+
+Erstelle zusätzlich:
+
+- Eine verständliche README für Einrichtung, Build, Start, Datenimport, Login und Tests.
+- Die aktualisierte Anforderungsmatrix.
+- Die Projektdokumentation als PDF nach sämtlichen formalen und inhaltlichen Vorgaben der Aufgabenstellung.
+- Ein Abgabe-ZIP mit der vorgeschriebenen Ordnerstruktur und den erforderlichen Daten, sobald diese vollständig vorliegen.
+
+Die Dokumentation muss die tatsächlich umgesetzte Lösung und den tatsächlichen Arbeitsprozess beschreiben. Erfinde keine Teamaktivitäten, Erfahrungen oder Testergebnisse. Fordere fehlende persönliche Angaben für die Reflexion gezielt an.
+
+Prüfe die Dokumentation auf Seitenzahl, Wortzahl, Formatierung und Inhalt. Gib keine unvollständige Datenbasis oder ungeprüfte Dokumentation als abgabefertig aus.
+
+Beende die Arbeit mit einem knappen Überblick über den Lieferumfang, tatsächlich ausgeführte Tests, verbleibende Einschränkungen und gegebenenfalls notwendige lokale Schritte.
+
+Beginne jetzt mit der Analyse der beigefügten Dateien und setze das Projekt anschließend schrittweise um. Liefere tatsächliche Projektdateien, nicht nur eine Beschreibung oder einzelne Codebeispiele.

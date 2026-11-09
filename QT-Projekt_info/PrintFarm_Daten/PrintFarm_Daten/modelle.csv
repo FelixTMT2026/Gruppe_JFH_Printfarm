@@ -1,0 +1,9 @@
+modell_id,hersteller,bezeichnung,kinematik,bauraum_x_mm,bauraum_y_mm,bauraum_z_mm,max_duesentemp_c,max_betttemp_c,heizleistung_duese_w,heizleistung_bett_w
+MD01,Layertec,LT-220,kartesisch,220,220,250,260,100,40,220
+MD02,Layertec,LT-300 Pro,kartesisch,300,300,400,300,110,50,400
+MD03,Fabrion,FX-Core,corexy,250,250,250,300,120,50,300
+MD04,Fabrion,FX-Core XL,corexy,350,350,350,300,120,60,600
+MD05,Nozzlix,N-Delta 200,delta,200,200,300,260,90,40,200
+MD06,Printara,P-Mini,kartesisch,180,180,180,2500,80,30,120
+MD07,Printara,P-Ind 400,corexy,400,400,400,350,130,80,1000
+MD08,Fabrion,FX-HT,corexy,300,300,300,450,150,100,800
