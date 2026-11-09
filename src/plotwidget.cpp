@@ -21,6 +21,43 @@ void PlotWidget::setDarkMode(bool dark)
     chart()->setTheme(dark ? QChart::ChartThemeDark : QChart::ChartThemeLight);
 }
 
+QVector<QPointF> PlotWidget::lttb(const QVector<QPointF> &points, int threshold)
+{
+    // Largest-Triangle-Three-Buckets: wählt pro Bucket den Punkt mit der größten
+    // Dreiecksfläche (Abweichung) -> starke Änderungen bleiben detailreich,
+    // stabile Bereiche werden auf wenige Punkte reduziert.
+    const int n = points.size();
+    if (threshold <= 0 || n <= threshold)
+        return points;
+    QVector<QPointF> out;
+    out.reserve(threshold);
+    out.append(points.first());
+    const int bucketSize = (n - 2) / (threshold - 2);
+    for (int i = 0; i < threshold - 2; ++i) {
+        const int b0 = 1 + i * bucketSize;
+        const int b1 = qMin(n - 1, b0 + bucketSize);
+        // durchschnittlicher nächster Bucket
+        double avgX = 0, avgY = 0;
+        const int n0 = b1, n1 = qMin(n - 1, b1 + bucketSize);
+        for (int j = n0; j < n1; ++j) { avgX += points[j].x(); avgY += points[j].y(); }
+        const int cnt = qMax(1, n1 - n0);
+        avgX /= cnt; avgY /= cnt;
+        const QPointF a = points[b0 - 1];
+        const QPointF avg(avgX, avgY);
+        double maxArea = -1;
+        int maxIdx = b0;
+        for (int j = b0; j < b1; ++j) {
+            const QPointF p = points[j];
+            const double area = qAbs((a.x() - avg.x()) * (p.y() - a.y()) -
+                                     (a.x() - p.x()) * (avg.y() - a.y())) * 0.5;
+            if (area > maxArea) { maxArea = area; maxIdx = j; }
+        }
+        out.append(points[maxIdx]);
+    }
+    out.append(points.last());
+    return out;
+}
+
 void PlotWidget::leeren()
 {
     chart()->removeAllSeries();
@@ -43,15 +80,22 @@ void PlotWidget::zeigeProtokoll(const Protokoll &p)
     auto *sDuese = mk(tr("Düsentemperatur"), QColor(214, 69, 49));
     auto *sBett = mk(tr("Betttemperatur"), QColor(41, 128, 185));
 
-    // Zeitachse in Minuten (Protokoll intern in Sekunden)
+    // Zeitachse in Minuten (Protokoll intern in Sekunden); adaptive Auflösung:
+    // LTTB behält an Sprüngen/Schwankungen die Detailpunkte, streicht stabile Phasen
+    QVector<QPointF> duesePts, bettPts;
     for (const auto &m : p.aufheizen) {
-        sDuese->append(m.zeitS / 60.0, m.dueseIstC);
-        sBett->append(m.zeitS / 60.0, m.bettIstC);
+        duesePts.append({m.zeitS / 60.0, m.dueseIstC});
+        bettPts.append({m.zeitS / 60.0, m.bettIstC});
     }
     for (const auto &m : p.druck) {
-        sDuese->append(m.zeitS / 60.0, m.dueseIstC);
-        sBett->append(m.zeitS / 60.0, m.bettIstC);
+        duesePts.append({m.zeitS / 60.0, m.dueseIstC});
+        bettPts.append({m.zeitS / 60.0, m.bettIstC});
     }
+    const int schwelle = qMax(200, width());   // ca. ein Punkt pro Pixel
+    for (const auto &pt : lttb(duesePts, schwelle))
+        sDuese->append(pt);
+    for (const auto &pt : lttb(bettPts, schwelle))
+        sBett->append(pt);
     // Ereignis-Markierungen als senkrechte Linien (nur Pause/Abbruch, nicht Start/Ende)
     for (const auto &ev : p.ereignisse) {
         if (ev.typ == QLatin1String("pause") || ev.typ == QLatin1String("fortsetzen") ||
@@ -97,8 +141,11 @@ void PlotWidget::zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> 
         auto *s = new QLineSeries();
         s->setName(k.first);
         s->setColor(farben[i++ % 8]);
+        QVector<QPointF> pts;
         for (const auto &m : k.second)
-            s->append(m.zeitS / 60.0, nurDueseIst ? m.dueseIstC : m.bettIstC);
+            pts.append({m.zeitS / 60.0, nurDueseIst ? m.dueseIstC : m.bettIstC});
+        for (const auto &pt : lttb(pts, qMax(200, width())))
+            s->append(pt);
         chart()->addSeries(s);
     }
     chart()->createDefaultAxes();

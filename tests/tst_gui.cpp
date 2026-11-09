@@ -52,6 +52,7 @@ private slots:
     void spracheUmschaltungKomplett();
     void plotLegendeUebersetzt();
     void singleClickAktualisiertProtokoll();
+    void lttbAdaptiv();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -582,6 +583,37 @@ void TestGui::singleClickAktualisiertProtokoll()
     QTest::qWait(30);
     QCOMPARE(plot->aktuellerAuftrag(), model->auftragAt(z2)->auftragId);
     QVERIFY(plot->aktuellerAuftrag() != model->auftragAt(z1)->auftragId);
+}
+
+void TestGui::lttbAdaptiv()
+{
+    // dichtes verrauschtes Signal mit einem großen Sprung in der Mitte
+    QVector<QPointF> pts;
+    for (int i = 0; i < 5000; ++i) {
+        double y = 100.0 + ((i * 37) % 10) * 0.5;      // Rauschen
+        if (i == 2500) y += 80.0;                       // Sprung
+        pts.append({double(i), y});
+    }
+    const auto out = PlotWidget::lttb(pts, 200);
+    QVERIFY(out.size() <= 200);
+    QVERIFY(out.size() >= 2);
+    QCOMPARE(out.first(), pts.first());   // Endpunkte erhalten
+    QCOMPARE(out.last(), pts.last());
+    // Sprungstelle bleibt detailreich erhalten (Punkt nahe i=2500 mit hoher Fläche)
+    bool sprungErhalten = false;
+    for (const auto &p : out)
+        if (qAbs(p.x() - 2500) < 60 && p.y() > 150) sprungErhalten = true;
+    QVERIFY(sprungErhalten);
+    // stabiles Signal: konstante Werte -> trotzdem Endpunkte, Größe begrenzt
+    QVector<QPointF> stab;
+    for (int i = 0; i < 5000; ++i) stab.append({double(i), 100.0});
+    const auto out2 = PlotWidget::lttb(stab, 200);
+    QVERIFY(out2.size() <= 200);
+    QCOMPARE(out2.first(), stab.first());
+    QCOMPARE(out2.last(), stab.last());
+    // klein genug -> unverändert
+    QVector<QPointF> klein = {{0, 0}, {1, 1}, {2, 0}};
+    QCOMPARE(PlotWidget::lttb(klein, 200).size(), 3);
 }
 
 QTEST_MAIN(TestGui)
