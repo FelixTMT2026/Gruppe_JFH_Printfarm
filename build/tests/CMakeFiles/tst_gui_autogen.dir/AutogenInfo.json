@@ -1,0 +1,288 @@
+{
+	"AUTOGEN_COMMAND_LINE_LENGTH_MAX" : 32000,
+	"BUILD_DIR" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/tst_gui_autogen",
+	"CMAKE_BINARY_DIR" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests",
+	"CMAKE_CURRENT_SOURCE_DIR" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/tests",
+	"CMAKE_EXECUTABLE" : "C:/Program Files/CMake/bin/cmake.exe",
+	"CMAKE_LIST_FILES" : 
+	[
+		"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/tests/CMakeLists.txt",
+		"C:/Qt/6.11.1/mingw_64/lib/cmake/Qt6/windows/app.exe.manifest.in",
+		"C:/Qt/6.11.1/mingw_64/lib/cmake/Qt6/windows/app.exe.manifest.in"
+	],
+	"CMAKE_SOURCE_DIR" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/tst_gui_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "tst_gui_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/analyse.h",
+			"MU",
+			"VNU7RW3YIC/moc_analyse.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/auth.h",
+			"MU",
+			"VNU7RW3YIC/moc_auth.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/csvio.h",
+			"MU",
+			"VNU7RW3YIC/moc_csvio.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/datastore.h",
+			"MU",
+			"VNU7RW3YIC/moc_datastore.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/dialogs.h",
+			"MU",
+			"VNU7RW3YIC/moc_dialogs.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/druckerwidget.h",
+			"MU",
+			"VNU7RW3YIC/moc_druckerwidget.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/fehlerlogwidget.h",
+			"MU",
+			"VNU7RW3YIC/moc_fehlerlogwidget.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/ganttwidget.h",
+			"MU",
+			"VNU7RW3YIC/moc_ganttwidget.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/mainwindow.h",
+			"MU",
+			"VNU7RW3YIC/moc_mainwindow.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/materialwidget.h",
+			"MU",
+			"VNU7RW3YIC/moc_materialwidget.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/plotwidget.h",
+			"MU",
+			"VNU7RW3YIC/moc_plotwidget.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/protocol.h",
+			"MU",
+			"VNU7RW3YIC/moc_protocol.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/regelguete.h",
+			"MU",
+			"VNU7RW3YIC/moc_regelguete.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/tablemodels.h",
+			"MU",
+			"VNU7RW3YIC/moc_tablemodels.cpp",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/teilewidget.h",
+			"MU",
+			"VNU7RW3YIC/moc_teilewidget.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/tst_gui_autogen/include",
+	"MOC_COMPILATION_FILE" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/tst_gui_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"MINGW_HAS_SECURE_API=1",
+		"QT_CHARTS_LIB",
+		"QT_CORE_LIB",
+		"QT_GUI_LIB",
+		"QT_NO_DEBUG",
+		"QT_OPENGLWIDGETS_LIB",
+		"QT_OPENGL_LIB",
+		"QT_SQL_LIB",
+		"QT_TESTCASE_BUILDDIR=\"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests\"",
+		"QT_TESTCASE_SOURCEDIR=\"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/tests\"",
+		"QT_TESTLIB_LIB",
+		"QT_WIDGETS_LIB",
+		"UNICODE",
+		"WIN32",
+		"WIN64",
+		"_ENABLE_EXTENDED_ALIGNED_STORAGE",
+		"_UNICODE",
+		"_WIN64"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src",
+		"C:/Qt/6.11.1/mingw_64/include/QtCore",
+		"C:/Qt/6.11.1/mingw_64/include",
+		"C:/Qt/6.11.1/mingw_64/mkspecs/win32-g++",
+		"C:/Qt/6.11.1/mingw_64/include/QtWidgets",
+		"C:/Qt/6.11.1/mingw_64/include/QtGui",
+		"C:/Qt/6.11.1/mingw_64/include/QtCharts",
+		"C:/Qt/6.11.1/mingw_64/include/QtOpenGL",
+		"C:/Qt/6.11.1/mingw_64/include/QtOpenGLWidgets",
+		"C:/Qt/6.11.1/mingw_64/include/QtSql",
+		"C:/Qt/6.11.1/mingw_64/include/QtTest",
+		"C:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++",
+		"C:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/x86_64-w64-mingw32",
+		"C:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/backward",
+		"C:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include",
+		"C:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include-fixed",
+		"C:/Qt/Tools/mingw1310_64/x86_64-w64-mingw32/include"
+	],
+	"MOC_MACRO_NAMES" : 
+	[
+		"Q_OBJECT",
+		"Q_GADGET",
+		"Q_NAMESPACE",
+		"Q_NAMESPACE_EXPORT",
+		"Q_GADGET_EXPORT",
+		"Q_ENUM_NS"
+	],
+	"MOC_OPTIONS" : [ "-DWIN32" ],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"C:/Qt/Tools/mingw1310_64/bin/g++.exe",
+		"-std=gnu++17",
+		"-w",
+		"-dM",
+		"-E",
+		"C:/Program Files/CMake/share/cmake-4.3/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/tst_gui_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : 
+	[
+		"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/tst_printfarm_autogen/mocs_compilation.cpp"
+	],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 8,
+	"PARSE_CACHE_FILE" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/CMakeFiles/tst_gui_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "C:/Qt/6.11.1/mingw_64/bin/moc.exe",
+	"QT_UIC_EXECUTABLE" : "C:/Qt/6.11.1/mingw_64/bin/uic.exe",
+	"QT_VERSION_MAJOR" : 6,
+	"QT_VERSION_MINOR" : 11,
+	"SETTINGS_FILE" : "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/CMakeFiles/tst_gui_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/analyse.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/auth.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/csvio.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/datastore.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/dialogs.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/druckerwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/fehlerlogwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/ganttwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/mainwindow.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/materialwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/plotwidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/protocol.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/regelguete.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/tablemodels.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/src/teilewidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/tests/tst_gui.cpp",
+			"MU",
+			null
+		]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : 
+	[
+		"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/tst_printfarm_autogen/mocs_compilation.cpp"
+	],
+	"UIC_UI_FILES" : [],
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

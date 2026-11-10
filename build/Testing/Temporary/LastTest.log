@@ -1,0 +1,104 @@
+Start testing: Nov 09 14:47 Mitteleuropäische Zeit
+----------------------------------------------------------
+1/2 Testing: printfarm
+1/2 Test: printfarm
+Command: "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tst_printfarm.exe"
+Directory: C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests
+"printfarm" start time: Nov 09 14:47 Mitteleuropäische Zeit
+Output:
+----------------------------------------------------------
+********* Start testing of TestPrintFarm *********
+Config: Using QtTest library 6.11.1, Qt 6.11.1 (x86_64-little_endian-llp64 shared (dynamic) release build; by GCC 13.1.0), windows 11
+PASS   : TestPrintFarm::initTestCase()
+PASS   : TestPrintFarm::csvImportUndPlausibilitaet()
+PASS   : TestPrintFarm::csvExport()
+PASS   : TestPrintFarm::regelgueteAufheizen()
+PASS   : TestPrintFarm::regelabweichungMitPause()
+PASS   : TestPrintFarm::protokollLazyLoading()
+PASS   : TestPrintFarm::rechte()
+PASS   : TestPrintFarm::planungGreedy()
+PASS   : TestPrintFarm::kostenrechnung()
+PASS   : TestPrintFarm::pidSimulation()
+PASS   : TestPrintFarm::sqlitePersistenz()
+PASS   : TestPrintFarm::kaputteCsvZeilen()
+PASS   : TestPrintFarm::fehlendeDateienDegradation()
+PASS   : TestPrintFarm::defektesJson()
+PASS   : TestPrintFarm::protokollNichtImIndex()
+PASS   : TestPrintFarm::lruCacheBegrenzt()
+PASS   : TestPrintFarm::asyncLoadSignal()
+PASS   : TestPrintFarm::regelgueteNichtAusgeregelt()
+PASS   : TestPrintFarm::regelgueteKeinSprung()
+PASS   : TestPrintFarm::csvRoundtrip()
+PASS   : TestPrintFarm::planungRespektiertMaterialGrenzen()
+PASS   : TestPrintFarm::planungAlleDruckerBelegt()
+PASS   : TestPrintFarm::kostenOhneMaterial()
+PASS   : TestPrintFarm::pidSimNullParameter()
+PASS   : TestPrintFarm::updateDruckerImExport()
+PASS   : TestPrintFarm::ungueltigeZeilenFormate()
+PASS   : TestPrintFarm::regelgueteUeberschwingen()
+PASS   : TestPrintFarm::regelabweichungNurPausen()
+PASS   : TestPrintFarm::utf8Roundtrip()
+PASS   : TestPrintFarm::protokollNurAufheizen()
+PASS   : TestPrintFarm::cleanupTestCase()
+Totals: 31 passed, 0 failed, 0 skipped, 0 blacklisted, 142ms
+********* Finished testing of TestPrintFarm *********
+<end of output>
+Test time =   0.17 sec
+----------------------------------------------------------
+Test Passed.
+"printfarm" end time: Nov 09 14:47 Mitteleuropäische Zeit
+"printfarm" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/2 Testing: gui
+2/2 Test: gui
+Command: "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tst_gui.exe"
+Directory: C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests
+"gui" start time: Nov 09 14:47 Mitteleuropäische Zeit
+Output:
+----------------------------------------------------------
+********* Start testing of TestGui *********
+Config: Using QtTest library 6.11.1, Qt 6.11.1 (x86_64-little_endian-llp64 shared (dynamic) release build; by GCC 13.1.0), windows 11
+QWARN  : TestGui::initTestCase() QFontDatabase: Cannot find font directory C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+PASS   : TestGui::initTestCase()
+PASS   : TestGui::vierTabsInReihenfolge()
+PASS   : TestGui::datenSofortSichtbar()
+PASS   : TestGui::filterFunktioniert()
+PASS   : TestGui::sortierungFunktioniert()
+QWARN  : TestGui::protokollUndRegelgueteEchteDaten() This plugin does not support propagateSizeHints()
+PASS   : TestGui::protokollUndRegelgueteEchteDaten()
+PASS   : TestGui::themeUndSpracheUmschaltbar()
+QWARN  : TestGui::detailDialogOeffnetSich() This plugin does not support propagateSizeHints()
+QWARN  : TestGui::detailDialogOeffnetSich() This plugin does not support propagateSizeHints()
+PASS   : TestGui::detailDialogOeffnetSich()
+PASS   : TestGui::spracheWechseltTabTexte()
+PASS   : TestGui::materialTabStatistikGefuellt()
+PASS   : TestGui::fehlerlogHatEintraege()
+PASS   : TestGui::teileInitialSortiertUndAusgewaehlt()
+PASS   : TestGui::teileFilterAusstehend()
+PASS   : TestGui::ganttLaesstSichZeichnen()
+PASS   : TestGui::themeFarbenBeiderModi()
+PASS   : TestGui::tabBleibtNachUiNeuaufbauErhalten()
+PASS   : TestGui::sortierungMitDuplikatenCrashfrei()
+PASS   : TestGui::protokollOhneAnmeldungSichtbar()
+PASS   : TestGui::belegungsplanNurFuerAdmin()
+PASS   : TestGui::dezimalpunktIstPunkt()
+PASS   : TestGui::spracheUmschaltungKomplett()
+PASS   : TestGui::plotLegendeUebersetzt()
+PASS   : TestGui::singleClickAktualisiertProtokoll()
+PASS   : TestGui::adaptiveZeitachseSkaliert()
+QWARN  : TestGui::adaptivToggleAchse() This plugin does not support propagateSizeHints()
+PASS   : TestGui::adaptivToggleAchse()
+PASS   : TestGui::cleanupTestCase()
+Totals: 26 passed, 0 failed, 0 skipped, 0 blacklisted, 1105ms
+********* Finished testing of TestGui *********
+<end of output>
+Test time =   1.28 sec
+----------------------------------------------------------
+Test Passed.
+"gui" end time: Nov 09 14:47 Mitteleuropäische Zeit
+"gui" time elapsed: 00:00:01
+----------------------------------------------------------
+
+End testing: Nov 09 14:47 Mitteleuropäische Zeit

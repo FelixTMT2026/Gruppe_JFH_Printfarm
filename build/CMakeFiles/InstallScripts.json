@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/cmake_install.cmake",
+		"C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
