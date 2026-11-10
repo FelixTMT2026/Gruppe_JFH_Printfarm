@@ -26,8 +26,11 @@ LoginDialog::LoginDialog(QWidget *parent) : QDialog(parent)
     m_rolle->addItem(tr("Technik"), Auth::Technik);
     m_rolle->addItem(tr("Admin"), Auth::Admin);
     m_name = new QLineEdit(this);
+    m_passwort = new QLineEdit(this);
+    m_passwort->setEchoMode(QLineEdit::Password);
     form->addRow(tr("Rolle:"), m_rolle);
     form->addRow(tr("Name:"), m_name);
+    form->addRow(tr("Passwort:"), m_passwort);
     auto *btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(btns, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(btns, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -36,6 +39,7 @@ LoginDialog::LoginDialog(QWidget *parent) : QDialog(parent)
 Auth::Rolle LoginDialog::ausgewaehlteRolle() const
 { return static_cast<Auth::Rolle>(m_rolle->currentData().toInt()); }
 QString LoginDialog::name() const { return m_name->text().trimmed(); }
+QString LoginDialog::passwort() const { return m_passwort->text(); }
 
 // ---------------------------------------------------------------- DruckerDetailDialog
 DruckerDetailDialog::DruckerDetailDialog(const Drucker &d, const DataStore *store,
@@ -50,12 +54,14 @@ DruckerDetailDialog::DruckerDetailDialog(const Drucker &d, const DataStore *stor
     layout->addWidget(m_stammdaten);
 
     const Modell *m = store->modell(d.modellId);
+    // Nutzdaten aus den CSVs vor HTML-Rendering escapen (CWE-79)
     QString text = tr("<b>%1</b> - Modell: %2 (%3, %4) | Standort: %5 | Inbetriebnahme: %6 | "
                       "Betriebsstunden: %7 | Düse: %8 mm | Firmware: %9 | PID: Kp=%10 Ki=%11 Kd=%12 | Status: %13")
-        .arg(d.druckerId, m ? m->bezeichnung : tr("unbekannt"), m ? m->hersteller : QString(),
-             m ? m->kinematik : QString(), d.standort, CsvIo::formatDate(d.inbetriebnahme))
-        .arg(qRound64(d.betriebsstunden)).arg(qRound64(d.dueseMm)).arg(d.firmware)
-        .arg(qRound64(d.pidKp)).arg(qRound64(d.pidKi)).arg(qRound64(d.pidKd)).arg(d.status);
+        .arg(d.druckerId.toHtmlEscaped(), m ? m->bezeichnung.toHtmlEscaped() : tr("unbekannt"),
+             m ? m->hersteller.toHtmlEscaped() : QString(), m ? m->kinematik.toHtmlEscaped() : QString(),
+             d.standort.toHtmlEscaped(), CsvIo::formatDate(d.inbetriebnahme))
+        .arg(qRound64(d.betriebsstunden)).arg(qRound64(d.dueseMm)).arg(d.firmware.toHtmlEscaped())
+        .arg(qRound64(d.pidKp)).arg(qRound64(d.pidKi)).arg(qRound64(d.pidKd)).arg(d.status.toHtmlEscaped());
     if (m)
         text += tr("<br>Bauraum: %1×%2×%3 mm | max. Düse %4 °C | max. Bett %5 °C")
                     .arg(qRound64(m->bauraumXMm)).arg(qRound64(m->bauraumYMm)).arg(qRound64(m->bauraumZMm))
@@ -110,7 +116,7 @@ void DruckerDetailDialog::zeigeAuftrag(const Auftrag &a)
     const Protokoll p = m_loader->load(a.auftragId);
     if (!p.valid) {
         m_plot->leeren();
-        m_regelguete->setText(tr("Protokoll nicht verfügbar: %1").arg(p.fehler));
+        m_regelguete->setText(tr("Protokoll nicht verfügbar: %1").arg(p.fehler.toHtmlEscaped()));
         m_befunde->clear();
         return;
     }
@@ -120,7 +126,7 @@ void DruckerDetailDialog::zeigeAuftrag(const Auftrag &a)
     if (rg.verfuegbar) {
         t = tr("Regelgüte %1:<br>Anstiegszeit: %2 s<br>Überschwingen: %3 K (%4 %)<br>"
                "Ausregelzeit: %5<br Mittlere Abweichung Druck: %6 K<br>Maximale Abweichung: %7 K")
-            .arg(a.auftragId).arg(qRound64(rg.anstiegszeitS)).arg(qRound64(rg.ueberschwingenK))
+            .arg(a.auftragId.toHtmlEscaped()).arg(qRound64(rg.anstiegszeitS)).arg(qRound64(rg.ueberschwingenK))
             .arg(qRound64(rg.ueberschwingenProzent))
             .arg(rg.ausgeregelt ? QString::number(rg.ausregelzeitS, 'f', 1) + QStringLiteral(" s")
                                 : tr("nicht ausgeregelt"))
@@ -128,7 +134,7 @@ void DruckerDetailDialog::zeigeAuftrag(const Auftrag &a)
         if (!rg.bemerkung.isEmpty())
             t += QStringLiteral("<br>%1").arg(rg.bemerkung);
     } else {
-        t = tr("Regelgüte nicht berechenbar für %1").arg(a.auftragId);
+        t = tr("Regelgüte nicht berechenbar für %1").arg(a.auftragId.toHtmlEscaped());
     }
     m_regelguete->setText(t);
     const auto bef = Fehlererkennung::analysiere(p, rg, m_store->material(a.materialId));
@@ -150,6 +156,8 @@ DruckerEditDialog::DruckerEditDialog(const Drucker &d, QWidget *parent) : QDialo
     m_status = new QComboBox(this);
     m_status->addItems({QStringLiteral("bereit"), QStringLiteral("druckt"),
                         QStringLiteral("wartung"), QStringLiteral("defekt")});
+    if (m_status->findText(d.status) < 0)
+        m_status->addItem(d.status);   // unbekannten Status aus den Daten uebernehmen statt verwerfen
     m_status->setCurrentText(d.status);
     m_kp = new QLineEdit(QString::number(d.pidKp), this);
     m_ki = new QLineEdit(QString::number(d.pidKi), this);
@@ -171,9 +179,11 @@ Drucker DruckerEditDialog::ergebnis() const
     d.druckerId = m_druckerId;
     d.standort = m_standort->text().trimmed();
     d.status = m_status->currentText();
-    d.pidKp = m_kp->text().toDouble();
-    d.pidKi = m_ki->text().toDouble();
-    d.pidKd = m_kd->text().toDouble();
+    bool okKp = false, okKi = false, okKd = false;
+    d.pidKp = m_kp->text().toDouble(&okKp);
+    d.pidKi = m_ki->text().toDouble(&okKi);
+    d.pidKd = m_kd->text().toDouble(&okKd);
+    const_cast<DruckerEditDialog*>(this)->m_gueltig = okKp && okKi && okKd;
     return d;
 }
 

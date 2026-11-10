@@ -312,6 +312,8 @@ bool DataStore::importSqlite(const QString &dbPath)
     }
     db.close();
     for (const auto &d : m_drucker) m_druckerMap.insert(d.druckerId, &d);
+    // importierte Daten vor der Uebernahme plausibilitaetspruefen
+    plausibilitaet();
     addLog(LogEintrag::System, QStringLiteral("SQLite-Import aus %1: %2 Drucker, %3 Aufträge")
                .arg(dbPath).arg(m_drucker.size()).arg(m_auftraege.size()));
     emit logChanged();

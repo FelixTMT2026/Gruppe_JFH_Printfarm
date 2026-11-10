@@ -55,20 +55,35 @@ Datenstruktur (im Datenordner):
 
 ## Tests
 
-Automatisierte Tests mit Qt Test (Import/Export, Validierung, Regelgüte inkl.
-Pausenbehandlung, Rechte, Planung, Kosten, PID-Simulation, SQLite, Lazy Loading):
+Alle Tests liegen im dedizierten Ordner **`tests/`** (Qt Test). **Neue Tests
+bitte immer dort ablegen** (z. B. `tests/tst_<thema>.cpp`) und in
+`tests/CMakeLists.txt` als eigenes Test-Target registrieren
+(`qt_add_executable` + `add_test` + `set_tests_properties` mit
+`QT_QPA_PLATFORM=offscreen`).
+
+Bestehende Test-Targets:
+
+- `tst_printfarm` — fachliche Logik ohne GUI: CSV-Import/Export, Validierung,
+  Regelgüte inkl. Pausenbehandlung, Rechte (Passwort-Login), Planung, Kosten,
+  PID-Simulation, SQLite-Persistenz, Lazy Loading sowie Security-Tests
+  (Path Traversal, CSV-Formelinjection)
+- `tst_gui` — GUI-QA headless (offscreen) mit den echten Projektdaten:
+  Tabs, Filter/Suche, Sortierung, Dialoge, Theme/Sprache, Plot
+
+Ausführen (baut beide Targets und führt alle Tests aus):
 
 ```bat
-cmake --build build --target tst_printfarm
-build\tst_printfarm.exe        # bzw. ctest im build-Verzeichnis
+cmake --build build
+ctest --test-dir build --output-on-failure
 ```
+
 
 ## Verzeichnisstruktur
 
 ```
 ├── CMakeLists.txt
 ├── src/            Quellen (model/io/logic/gui getrennt)
-├── tests/          Qt-Test
+├── tests/          alle Qt-Tests (neue Tests hier ablegen)
 ├── translations/   Deutsch/Englisch (.ts)
 └── QT-Projekt_info/  Aufgabenstellung, Layouts, Prompt, PrintFarm_Daten
 ```

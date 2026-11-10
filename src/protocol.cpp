@@ -1,10 +1,34 @@
 #include "protocol.h"
 #include "csvio.h"
 #include <QFile>
+#include <QFileInfo>
+#include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QtConcurrent/QtConcurrent>
+
+// Maximale Groesse einer Protokolldatei (DoS-Schutz gegen riesige Dateien)
+static constexpr qint64 kMaxProtokollBytes = 20 * 1024 * 1024;   // 20 MB
+
+// Pfad aus dem Master-Index gegen Path Traversal sichern:
+// liefert den bereinigten absoluten Pfad, wenn er innerhalb des Datenordners
+// liegt, sonst leer (CWE-22).
+static QString sichererPfad(const QString &dataFolder, const QString &rel)
+{
+    if (rel.isEmpty() || QDir::isAbsolutePath(rel))
+        return {};
+    auto norm = [](const QString &p) {
+        return QDir::cleanPath(p).replace(QLatin1Char('\\'), QLatin1Char('/'));
+    };
+    const QString base = norm(QDir(dataFolder).canonicalPath());
+    if (base.isEmpty())
+        return {};
+    const QString full = norm(QDir(dataFolder).absoluteFilePath(rel));
+    if (full != base && !full.startsWith(base + QLatin1Char('/')))
+        return {};
+    return full;
+}
 
 ProtocolLoader::ProtocolLoader(QObject *parent) : QObject(parent) {}
 
@@ -85,6 +109,11 @@ Protokoll ProtocolLoader::parseJson(const QString &path, const QString &auftragI
     Protokoll p;
     p.auftragId = auftragId;
     QFile f(path);
+    if (QFileInfo(path).size() > kMaxProtokollBytes) {
+        p.fehler = QStringLiteral("Protokolldatei zu gross (> %1 MB), Laden abgelehnt: %2")
+                       .arg(kMaxProtokollBytes / (1024 * 1024)).arg(path);
+        return p;
+    }
     if (!f.open(QIODevice::ReadOnly)) {
         p.fehler = QStringLiteral("Protokolldatei nicht lesbar: %1").arg(path);
         return p;
@@ -128,7 +157,14 @@ Protokoll ProtocolLoader::load(const QString &auftragId)
         p.fehler = QStringLiteral("Kein Protokoll im Master-Index für diesen Auftrag");
         return p;
     }
-    Protokoll p = parseJson(m_dataFolder + "/" + rel, auftragId);
+    const QString pfad = sichererPfad(m_dataFolder, rel);
+    if (pfad.isEmpty()) {
+        Protokoll p;
+        p.auftragId = auftragId;
+        p.fehler = QStringLiteral("Pfad aus dem Master-Index liegt ausserhalb des Datenordners - abgelehnt");
+        return p;
+    }
+    Protokoll p = parseJson(pfad, auftragId);
     if (p.valid)
         cachePut(auftragId, p);
     return p;
@@ -162,6 +198,13 @@ void ProtocolLoader::loadAsync(const QString &auftragId)
             p.fehler = QStringLiteral("Kein Protokoll im Master-Index für diesen Auftrag");
             return p;
         }
-        return parseJson(dataFolder + "/" + rel, auftragId);
+        const QString pfad = sichererPfad(dataFolder, rel);
+        if (pfad.isEmpty()) {
+            Protokoll p;
+            p.auftragId = auftragId;
+            p.fehler = QStringLiteral("Pfad aus dem Master-Index liegt ausserhalb des Datenordners - abgelehnt");
+            return p;
+        }
+        return parseJson(pfad, auftragId);
     }));
 }

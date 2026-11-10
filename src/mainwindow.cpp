@@ -195,7 +195,13 @@ void MainWindow::login()
     }
     LoginDialog dlg(this);
     if (dlg.exec() == QDialog::Accepted) {
-        Auth::login(dlg.ausgewaehlteRolle(), dlg.name());
+        if (!Auth::login(dlg.ausgewaehlteRolle(), dlg.name(), dlg.passwort())) {
+            m_store->addLog(LogEintrag::System, tr("Fehlgeschlagene Anmeldung (falsches Passwort)"));
+            QMessageBox::warning(this, tr("Anmeldung"),
+                tr("Falsches Passwort für die gewählte Rolle."));
+            statusBar()->showMessage(tr("Anmeldung fehlgeschlagen: falsches Passwort."));
+            return;
+        }
         m_store->addLog(LogEintrag::System,
             tr("Anmeldung: %1 als %2").arg(Auth::benutzerName(),
                 Auth::rolle() == Auth::Admin ? QStringLiteral("admin") :

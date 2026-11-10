@@ -17,9 +17,11 @@ public:
     explicit LoginDialog(QWidget *parent = nullptr);
     Auth::Rolle ausgewaehlteRolle() const;
     QString name() const;
+    QString passwort() const;
 private:
     QComboBox *m_rolle;
     QLineEdit *m_name;
+    QLineEdit *m_passwort;
 };
 
 class DruckerDetailDialog : public QDialog {
@@ -45,11 +47,13 @@ class DruckerEditDialog : public QDialog {
 public:
     DruckerEditDialog(const Drucker &d, QWidget *parent = nullptr);
     Drucker ergebnis() const;
+    bool eingabenGueltig() const { return m_gueltig; }   // false bei ungueltigen Zahlen
 private:
     QString m_druckerId;
     QLineEdit *m_standort;
     QComboBox *m_status;
     QLineEdit *m_kp, *m_ki, *m_kd;
+    bool m_gueltig = true;
 };
 
 class PidSimDialog : public QDialog {

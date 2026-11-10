@@ -44,6 +44,9 @@ private slots:
     void regelabweichungNurPausen();
     void utf8Roundtrip();
     void protokollNurAufheizen();
+    // --- Security ---
+    void pfadTraversalAbgelehnt();
+    void csvFormelInjectionGeschuetzt();
 };
 
 // Kleine synthetische Testdatenbasis im Temp-Verzeichnis
@@ -223,13 +226,16 @@ void TestPrintFarm::rechte()
     Auth::logout();
     QVERIFY(!Auth::darfPidAendern());
     QVERIFY(!Auth::darfStammdatenAendern());
-    Auth::login(Auth::Bediener, "b1");
+    // falsches Passwort darf nicht anmelden
+    QVERIFY(!Auth::login(Auth::Admin, "a1", QStringLiteral("falsch")));
+    QCOMPARE(Auth::rolle(), Auth::Keine);
+    QVERIFY(Auth::login(Auth::Bediener, "b1", QStringLiteral("bediener123")));
     QVERIFY(!Auth::darfPidAendern());
     QVERIFY(Auth::darfExportieren());
-    Auth::login(Auth::Technik, "t1");
+    QVERIFY(Auth::login(Auth::Technik, "t1", QStringLiteral("technik123")));
     QVERIFY(Auth::darfPidAendern());
     QVERIFY(!Auth::darfStammdatenAendern());
-    Auth::login(Auth::Admin, "a1");
+    QVERIFY(Auth::login(Auth::Admin, "a1", QStringLiteral("admin123")));
     QVERIFY(Auth::darfPidAendern());
     QVERIFY(Auth::darfStammdatenAendern());
     Auth::logout();
@@ -618,6 +624,51 @@ void TestPrintFarm::protokollNurAufheizen()
     const Regelguete rg = RegelgueteRechner::werteAus(p.aufheizen, p.druck, 210.0);
     QVERIFY(rg.verfuegbar);
     QCOMPARE(rg.mittlereAbweichungK, 0.0);
+}
+
+void TestPrintFarm::pfadTraversalAbgelehnt()
+{
+    const QString dir = schreibeTestdaten();
+    // boesartige Index-Eintraege: Escape ueber ../ und absoluter Pfad
+    QFile outside(dir + "/evil.json");
+    outside.open(QIODevice::WriteOnly);
+    outside.write("{\"auftrag\":{\"drucker_id\":\"X\"},\"aufheizen\":{\"zeit_s\":[0,1],\"duese_ist_c\":[20,21]}}");
+    outside.close();
+    CsvIo::write(dir + "/master_protokoll_index.csv", {
+        {"auftrag_id","pfad","anzahl_werte","start","ende"},
+        {"JEVIL","../evil.json","2","",""},
+        {"JABS","C:/Windows/win.ini","1","",""},
+    });
+    ProtocolLoader loader;
+    loader.loadIndex(dir);
+    const Protokoll p1 = loader.load("JEVIL");
+    QVERIFY(!p1.valid);   // ../ darf nicht gelesen werden
+    QVERIFY(p1.fehler.contains(QStringLiteral("ausserhalb")));
+    const Protokoll p2 = loader.load("JABS");
+    QVERIFY(!p2.valid);   // absolute Pfade duerfen nicht gelesen werden
+    QVERIFY(p2.fehler.contains(QStringLiteral("ausserhalb")));
+}
+
+void TestPrintFarm::csvFormelInjectionGeschuetzt()
+{
+    const QString dir = QDir::tempPath() + "/printfarm_csv_injection";
+    QDir().mkpath(dir);
+    const QString path = dir + "/out.csv";
+    QVERIFY(CsvIo::write(path, {
+        {"feld","wert"},
+        {"=1+1", "@cmd", "+SUM(A1)", "-2+3", "normal", "mit,komma"},
+    }));
+    QFile f(path);
+    QVERIFY(f.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString inhalt = QString::fromUtf8(f.readAll());
+    f.close();
+    // gefaehrliche Fuehrungszeichen werden mit Apostroph entschaerft
+    QVERIFY(inhalt.contains(QStringLiteral("'=1+1")));
+    QVERIFY(inhalt.contains(QStringLiteral("'@cmd")));
+    QVERIFY(inhalt.contains(QStringLiteral("'+SUM(A1)")));
+    QVERIFY(inhalt.contains(QStringLiteral("'-2+3")));
+    QVERIFY(inhalt.contains(QStringLiteral("normal")));
+    QVERIFY(inhalt.contains(QStringLiteral("\"mit,komma\"")));
 }
 
 QTEST_GUILESS_MAIN(TestPrintFarm)

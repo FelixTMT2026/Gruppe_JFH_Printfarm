@@ -109,10 +109,12 @@ void TeileWidget::zeigeAuftrag(const Auftrag &a)
 {
     m_aktuellerAuftrag = a.auftragId;
     const Material *mat = m_store->material(a.materialId);
+    // Nutzdaten aus den CSVs vor HTML-Rendering escapen (CWE-79)
     m_info->setText(tr("<b>%1</b> - %2 auf %3 | Material: %4 | Soll: %5 min, %6 g | Ergebnis: %7%8")
-        .arg(a.auftragId, a.bauteil, a.druckerId, mat ? mat->bezeichnung : a.materialId)
-        .arg(qRound64(a.dauerSollMin)).arg(qRound64(a.filamentSollG)).arg(a.ergebnis)
-        .arg(a.fehlercode.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(a.fehlercode)));
+        .arg(a.auftragId.toHtmlEscaped(), a.bauteil.toHtmlEscaped(), a.druckerId.toHtmlEscaped(),
+             (mat ? mat->bezeichnung : a.materialId).toHtmlEscaped())
+        .arg(qRound64(a.dauerSollMin)).arg(qRound64(a.filamentSollG)).arg(a.ergebnis.toHtmlEscaped())
+        .arg(a.fehlercode.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(a.fehlercode.toHtmlEscaped())));
 
     const auto k = Kostenrechnung::auftrag(a, mat);
     m_kosten->setText(tr("Kosten: Material %1 € + Maschine %2 € = %3 €")
@@ -127,7 +129,7 @@ void TeileWidget::zeigeAuftrag(const Auftrag &a)
     const Protokoll p = m_loader->load(a.auftragId);
     if (!p.valid) {
         m_plot->leeren();
-        m_info->setText(m_info->text() + tr("<br><i>Kein Protokoll verfügbar: %1</i>").arg(p.fehler));
+        m_info->setText(m_info->text() + tr("<br><i>Kein Protokoll verfügbar: %1</i>").arg(p.fehler.toHtmlEscaped()));
         return;
     }
     m_plot->zeigeProtokoll(p);

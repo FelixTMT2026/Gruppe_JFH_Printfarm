@@ -74,11 +74,11 @@ void MaterialWidget::aktualisiereStats()
                     .arg(filamentGes / 1000.0, 0, 'f', 2).arg(kostenGes, 0, 'f', 2);
     s += tr("Erfolgsquote je Material: ");
     for (auto it = proMaterial.begin(); it != proMaterial.end(); ++it)
-        s += QStringLiteral("%1 %2%3 ").arg(it.key())
+        s += QStringLiteral("%1 %2%3 ").arg(it.key().toHtmlEscaped())
                  .arg(it.value().first ? 100.0 * it.value().second / it.value().first : 0, 0, 'f', 0)
                  .arg(QLatin1Char('%'));
     s += QStringLiteral("<br>") + tr("Fehlercodes: ");
     for (auto it = fehlercodes.begin(); it != fehlercodes.end(); ++it)
-        s += QStringLiteral("%1 (%2) ").arg(it.key()).arg(it.value());
+        s += QStringLiteral("%1 (%2) ").arg(it.key().toHtmlEscaped()).arg(it.value());
     m_stats->setText(s);
 }

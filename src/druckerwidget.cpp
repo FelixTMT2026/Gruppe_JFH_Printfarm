@@ -111,6 +111,11 @@ void DruckerWidget::oeffneEdit(const Drucker &d)
     DruckerEditDialog dlg(d, this);
     if (dlg.exec() != QDialog::Accepted) return;
     Drucker neu = dlg.ergebnis();
+    if (!dlg.eingabenGueltig()) {
+        QMessageBox::warning(this, tr("Ungültige Eingabe"),
+            tr("PID-Werte müssen gültige Zahlen sein. Änderung verworfen."));
+        return;
+    }
     neu.druckerId = d.druckerId;
     neu.modellId = d.modellId;
     neu.inbetriebnahme = d.inbetriebnahme;

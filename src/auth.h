@@ -8,8 +8,12 @@ class Auth {
 public:
     enum Rolle { Keine = 0, Bediener, Technik, Admin };
 
-    static void login(Rolle r, const QString &name);
+    // Login mit Passwort-Pruefung (SHA-256, siehe auth.cpp). Liefert false,
+    // wenn das Passwort zur Rolle nicht stimmt - dann bleibt abgemeldet.
+    static bool login(Rolle r, const QString &name, const QString &passwort);
     static void logout();
+    // Passwort-Pruefung einzeln (z. B. fuer Tests)
+    static bool passwortOk(Rolle r, const QString &passwort);
     static Rolle rolle();
     static QString benutzerName();
 

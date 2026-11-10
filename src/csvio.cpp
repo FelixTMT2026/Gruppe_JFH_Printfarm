@@ -19,6 +19,12 @@ QList<QStringList> CsvIo::read(const QString &path, bool *ok, QList<CsvError> *e
         ++zeile;
         if (line.trimmed().isEmpty())
             continue;
+        // DoS-Schutz: absurd lange Zeilen ablehnen statt komplett in den RAM zu ziehen
+        if (line.size() > 1024 * 1024) {
+            if (errors) errors->append({zeile, QStringLiteral("Zeile zu lang (> 1 MB), uebersprungen")});
+            if (ok) *ok = false;
+            continue;
+        }
         rows.append(splitLine(line));
     }
     if (ok) *ok = true;
@@ -77,12 +83,24 @@ QStringList CsvIo::splitLine(const QString &line)
 
 QString CsvIo::joinLine(const QStringList &fields)
 {
+    // Felder, die in Tabellenkalkulationen als Formel interpretiert wuerden
+    // (CWE-1236), mit fuehrendem Apostroph entschaerfen.
+    auto formelGefaehrlich = [](const QString &f) {
+        if (f.isEmpty()) return false;
+        const QChar c = f.at(0);
+        return c == QLatin1Char('=') || c == QLatin1Char('+') || c == QLatin1Char('-')
+               || c == QLatin1Char('@') || c == QLatin1Char('\t') || c == QLatin1Char('\r');
+    };
     QStringList quoted;
     for (const auto &f : fields) {
-        if (f.contains(QLatin1Char(',')) || f.contains(QLatin1Char('"')) || f.contains(QLatin1Char('\n')))
-            quoted.append(QStringLiteral("\"%1\"").arg(QString(f).replace(QLatin1Char('"'), QStringLiteral("\"\""))));
+        QString val = f;
+        if (formelGefaehrlich(val))
+            val.prepend(QLatin1Char('\''));
+        if (val.contains(QLatin1Char(',')) || val.contains(QLatin1Char('"'))
+            || val.contains(QLatin1Char('\n')) || val.contains(QLatin1Char('\r')))
+            quoted.append(QStringLiteral("\"%1\"").arg(QString(val).replace(QLatin1Char('"'), QStringLiteral("\"\""))));
         else
-            quoted.append(f);
+            quoted.append(val);
     }
     return quoted.join(QLatin1Char(','));
 }
