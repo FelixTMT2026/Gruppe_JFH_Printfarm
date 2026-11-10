@@ -14,4 +14,5 @@ private:
     DataStore *m_store;
     LogModel *m_model;
     class QComboBox *m_katFilter;
+    class QPushButton *m_resetBtn;
 };

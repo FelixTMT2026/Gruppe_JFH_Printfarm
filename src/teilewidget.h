@@ -25,6 +25,7 @@ private:
     class QTableView *m_view;
     class QLineEdit *m_suche;
     class QComboBox *m_ergebnisFilter;
+    class QPushButton *m_resetBtn;
     class PlotWidget *m_plot;
     class QLabel *m_info;
     class QLabel *m_kosten;

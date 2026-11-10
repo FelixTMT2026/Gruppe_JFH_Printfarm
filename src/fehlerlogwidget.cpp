@@ -2,6 +2,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QComboBox>
+#include <QPushButton>
 #include <QTableView>
 #include <QHeaderView>
 
@@ -17,7 +18,10 @@ FehlerlogWidget::FehlerlogWidget(DataStore *store, QWidget *parent)
     m_katFilter->addItem(tr("Dateifehler"), int(LogEintrag::Datei));
     m_katFilter->addItem(tr("Protokollfehler"), int(LogEintrag::Protokoll));
     m_katFilter->addItem(tr("System"), int(LogEintrag::System));
+    m_resetBtn = new QPushButton(tr("Filter zurücksetzen"), this);
+    m_resetBtn->setToolTip(tr("Kategorie-Filter auf „Alle Kategorien“ zurücksetzen"));
     filter->addWidget(m_katFilter);
+    filter->addWidget(m_resetBtn);
     filter->addStretch();
     layout->addLayout(filter);
 
@@ -29,6 +33,9 @@ FehlerlogWidget::FehlerlogWidget(DataStore *store, QWidget *parent)
 
     connect(m_katFilter, &QComboBox::currentIndexChanged, this, [this]() {
         m_model->setKategorieFilter(m_katFilter->currentData().toInt());
+    });
+    connect(m_resetBtn, &QPushButton::clicked, this, [this]() {
+        m_katFilter->setCurrentIndex(0);   // "Alle Kategorien"
     });
     connect(store, &DataStore::logChanged, m_model, &LogModel::refresh);
     connect(store, &DataStore::datenGeladen, m_model, &LogModel::refresh);

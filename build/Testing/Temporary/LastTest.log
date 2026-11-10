@@ -1,10 +1,10 @@
-Start testing: Nov 09 14:47 Mitteleuropäische Zeit
+Start testing: Nov 10 10:04 Mitteleuropäische Zeit
 ----------------------------------------------------------
 1/2 Testing: printfarm
 1/2 Test: printfarm
 Command: "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tst_printfarm.exe"
 Directory: C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests
-"printfarm" start time: Nov 09 14:47 Mitteleuropäische Zeit
+"printfarm" start time: Nov 10 10:04 Mitteleuropäische Zeit
 Output:
 ----------------------------------------------------------
 ********* Start testing of TestPrintFarm *********
@@ -40,13 +40,13 @@ PASS   : TestPrintFarm::regelabweichungNurPausen()
 PASS   : TestPrintFarm::utf8Roundtrip()
 PASS   : TestPrintFarm::protokollNurAufheizen()
 PASS   : TestPrintFarm::cleanupTestCase()
-Totals: 31 passed, 0 failed, 0 skipped, 0 blacklisted, 142ms
+Totals: 31 passed, 0 failed, 0 skipped, 0 blacklisted, 430ms
 ********* Finished testing of TestPrintFarm *********
 <end of output>
-Test time =   0.17 sec
+Test time =   0.50 sec
 ----------------------------------------------------------
 Test Passed.
-"printfarm" end time: Nov 09 14:47 Mitteleuropäische Zeit
+"printfarm" end time: Nov 10 10:04 Mitteleuropäische Zeit
 "printfarm" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -54,7 +54,7 @@ Test Passed.
 2/2 Test: gui
 Command: "C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tst_gui.exe"
 Directory: C:/Users/witts/Desktop/Gruppe_JFH_Printfarm/build/tests
-"gui" start time: Nov 09 14:47 Mitteleuropäische Zeit
+"gui" start time: Nov 10 10:04 Mitteleuropäische Zeit
 Output:
 ----------------------------------------------------------
 ********* Start testing of TestGui *********
@@ -91,14 +91,14 @@ PASS   : TestGui::adaptiveZeitachseSkaliert()
 QWARN  : TestGui::adaptivToggleAchse() This plugin does not support propagateSizeHints()
 PASS   : TestGui::adaptivToggleAchse()
 PASS   : TestGui::cleanupTestCase()
-Totals: 26 passed, 0 failed, 0 skipped, 0 blacklisted, 1105ms
+Totals: 26 passed, 0 failed, 0 skipped, 0 blacklisted, 2362ms
 ********* Finished testing of TestGui *********
 <end of output>
-Test time =   1.28 sec
+Test time =   2.50 sec
 ----------------------------------------------------------
 Test Passed.
-"gui" end time: Nov 09 14:47 Mitteleuropäische Zeit
-"gui" time elapsed: 00:00:01
+"gui" end time: Nov 10 10:04 Mitteleuropäische Zeit
+"gui" time elapsed: 00:00:02
 ----------------------------------------------------------
 
-End testing: Nov 09 14:47 Mitteleuropäische Zeit
+End testing: Nov 10 10:04 Mitteleuropäische Zeit

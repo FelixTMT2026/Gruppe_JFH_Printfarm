@@ -38,8 +38,11 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     m_planBtn->setToolTip(tr("Geplante Aufträge greedy auf geeignete Drucker verteilen (nur Admin)"));
     // Belegungsplan nur für Admin sichtbar
     m_planBtn->setVisible(Auth::rolle() == Auth::Admin);
+    m_resetBtn = new QPushButton(tr("Filter zurücksetzen"), this);
+    m_resetBtn->setToolTip(tr("Suche und Ergebnis-Filter auf „Alle“ zurücksetzen"));
     filter->addWidget(m_suche, 1);
     filter->addWidget(m_ergebnisFilter);
+    filter->addWidget(m_resetBtn);
     filter->addWidget(m_planBtn);
     layout->addLayout(filter);
 
@@ -72,6 +75,10 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     });
     connect(m_ergebnisFilter, &QComboBox::currentIndexChanged, this, [this]() {
         m_model->setFilter(m_suche->text(), m_ergebnisFilter->currentData().toString());
+    });
+    connect(m_resetBtn, &QPushButton::clicked, this, [this]() {
+        m_suche->clear();   // loest textChanged -> setFilter("") aus
+        m_ergebnisFilter->setCurrentIndex(0);
     });
     // Single-Click genügt: Protokoll aktualisiert sich sofort
     connect(m_view, &QTableView::clicked, this, [this](const QModelIndex &idx) {

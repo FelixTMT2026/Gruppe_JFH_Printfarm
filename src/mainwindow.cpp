@@ -22,13 +22,20 @@
 #include <QVBoxLayout>
 #include <QSettings>
 #include <QGuiApplication>
+#include <QScreen>
 #include <QStyleHints>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
     setWindowTitle(tr("PrintFarm - Monitoring der 3D-Druckerfarm"));
-    setMinimumSize(960, 640);
-    resize(1280, 840);
+    // Fenster frei skalierbar: Mindestgroesse = halbe verfuegbare Bildschirmflaeche,
+    // damit das Fenster garantiert auf mindestens der Haelfte eines Bildschirms Platz hat.
+    // Startgroesse 1280x840, auf die Bildschirmgroesse begrenzt.
+    const QRect screenGeo = QGuiApplication::primaryScreen()->availableGeometry();
+    setMinimumSize(qMax(480, screenGeo.width() / 2),
+                   qMax(320, screenGeo.height() / 2));
+    resize(qMin(1280, screenGeo.width()),
+           qMin(840, screenGeo.height()));
 
     m_store = new DataStore(this);
     m_loader = new ProtocolLoader(this);

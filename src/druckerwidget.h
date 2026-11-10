@@ -24,4 +24,5 @@ private:
     class QLineEdit *m_suche;
     class QComboBox *m_statusFilter;
     class QComboBox *m_kinematikFilter;
+    class QPushButton *m_resetBtn;
 };

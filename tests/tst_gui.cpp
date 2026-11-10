@@ -109,16 +109,26 @@ void TestGui::filterFunktioniert()
     QCOMPARE(model->rowCount(), 1);    // genau ein Treffer
     suche->setText(QString());
     QCOMPARE(model->rowCount(), 80);   // zurücksetzen zeigt wieder alle
-    // Status-Filter: Combo mit Status-Werten finden und „wartung“ wählen
+    // Status-Filter: Combo über den sichtbaren Text finden und „wartung“ wählen
+    // (findText statt findData: prueft den Eintrag, den der Benutzer anklickt)
     QComboBox *statusCombo = nullptr;
     for (auto *c : tab0->findChildren<QComboBox*>()) {
-        if (c->findData(QStringLiteral("wartung")) >= 0) statusCombo = c;
+        if (c->findText(QStringLiteral("wartung")) >= 0) statusCombo = c;
     }
     QVERIFY(statusCombo);
-    statusCombo->setCurrentIndex(statusCombo->findData(QStringLiteral("wartung")));
+    statusCombo->setCurrentIndex(statusCombo->findText(QStringLiteral("wartung")));
     QVERIFY(model->rowCount() < 80);   // 4 Wartungen in den Daten
     QCOMPARE(model->rowCount(), 4);
     statusCombo->setCurrentIndex(0);
+    QCOMPARE(model->rowCount(), 80);
+    // Reset-Button: Suche + Dropdowns zuruecksetzen -> wieder alle 80 Zeilen
+    suche->setText(QStringLiteral("D001"));
+    QCOMPARE(model->rowCount(), 1);
+    auto *resetBtn = tab0->findChild<QPushButton*>();
+    QVERIFY(resetBtn);
+    resetBtn->click();
+    QCOMPARE(suche->text(), QString());
+    QCOMPARE(statusCombo->currentIndex(), 0);
     QCOMPARE(model->rowCount(), 80);
 }
 

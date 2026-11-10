@@ -23,8 +23,10 @@ DruckerWidget::DruckerWidget(DataStore *store, ProtocolLoader *loader, QWidget *
     m_suche->setClearButtonEnabled(true);   // schnelles Leeren der Suche
     m_statusFilter = new QComboBox(this);
     m_statusFilter->addItem(tr("Alle Status"), QString());
-    m_statusFilter->addItems({QStringLiteral("bereit"), QStringLiteral("druckt"),
-                              QStringLiteral("wartung"), QStringLiteral("defekt")});
+    // Text auch als User-Data setzen, sonst liefert currentData() leer und der Filter greift nicht
+    for (const auto &s : {QStringLiteral("bereit"), QStringLiteral("druckt"),
+                          QStringLiteral("wartung"), QStringLiteral("defekt")})
+        m_statusFilter->addItem(s, s);
     // zusätzliche, in den Daten vorkommende Status (z. B. „kaputt“, leer) aufnehmen
     connect(store, &DataStore::datenGeladen, this, [this, store]() {
         for (const auto &d : store->drucker()) {
@@ -38,11 +40,15 @@ DruckerWidget::DruckerWidget(DataStore *store, ProtocolLoader *loader, QWidget *
     });
     m_kinematikFilter = new QComboBox(this);
     m_kinematikFilter->addItem(tr("Alle Kinematiken"), QString());
-    m_kinematikFilter->addItems({QStringLiteral("kartesisch"), QStringLiteral("corexy"),
-                                 QStringLiteral("delta")});
+    for (const auto &k : {QStringLiteral("kartesisch"), QStringLiteral("corexy"),
+                          QStringLiteral("delta")})
+        m_kinematikFilter->addItem(k, k);   // Text auch als User-Data (siehe Status-Filter)
+    m_resetBtn = new QPushButton(tr("Filter zurücksetzen"), this);
+    m_resetBtn->setToolTip(tr("Suche und alle Filter-Dropdowns auf „Alle“ zurücksetzen"));
     filter->addWidget(m_suche, 1);
     filter->addWidget(m_statusFilter);
     filter->addWidget(m_kinematikFilter);
+    filter->addWidget(m_resetBtn);
     layout->addLayout(filter);
 
     m_model = new DruckerModel(store, this);
@@ -66,6 +72,11 @@ DruckerWidget::DruckerWidget(DataStore *store, ProtocolLoader *loader, QWidget *
     connect(m_kinematikFilter, &QComboBox::currentIndexChanged, this, [this]() {
         m_model->setFilter(m_suche->text(), m_statusFilter->currentData().toString(),
                            m_kinematikFilter->currentData().toString());
+    });
+    connect(m_resetBtn, &QPushButton::clicked, this, [this]() {
+        m_suche->clear();   // loest textChanged -> setFilter("") aus
+        m_statusFilter->setCurrentIndex(0);
+        m_kinematikFilter->setCurrentIndex(0);
     });
     connect(m_view, &QTableView::doubleClicked, this, [this](const QModelIndex &idx) {
         if (const Drucker *d = m_model->druckerAt(idx.row())) oeffneDetail(*d);
