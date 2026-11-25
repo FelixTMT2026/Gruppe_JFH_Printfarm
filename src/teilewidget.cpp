@@ -1,3 +1,5 @@
+// Implementierung siehe teilewidget.h.
+
 #include "teilewidget.h"
 #include "plotwidget.h"
 #include "ganttwidget.h"
@@ -19,51 +21,49 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 
-TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *parent)
-    : QWidget(parent), m_store(store), m_loader(loader), m_aktuellerAuftrag(QString())
+PartsWidget::PartsWidget(DataStore *store, ProtocolLoader *loader, QWidget *parent)
+    : QWidget(parent), m_store(store), m_loader(loader), m_currentJob(QString())
 {
     auto *layout = new QVBoxLayout(this);
 
     auto *filter = new QHBoxLayout();
-    m_suche = new QLineEdit(this);
-    m_suche->setPlaceholderText(tr("Suche nach Auftrag, Drucker, Bauteil..."));
-    m_suche->setClearButtonEnabled(true);
-    m_ergebnisFilter = new QComboBox(this);
-    m_ergebnisFilter->addItem(tr("Alle Ergebnisse"), QString());
-    m_ergebnisFilter->addItem(QStringLiteral("erfolgreich"), QStringLiteral("erfolgreich"));
-    m_ergebnisFilter->addItem(QStringLiteral("abgebrochen"), QStringLiteral("abgebrochen"));
-    m_ergebnisFilter->addItem(QStringLiteral("fehlgeschlagen"), QStringLiteral("fehlgeschlagen"));
-    m_ergebnisFilter->addItem(QStringLiteral("ausstehend"), QStringLiteral("ausstehend"));
+    m_search = new QLineEdit(this);
+    m_search->setPlaceholderText(tr("Suche nach Auftrag, Drucker, Bauteil..."));
+    m_search->setClearButtonEnabled(true);
+    m_resultFilter = new QComboBox(this);
+    m_resultFilter->addItem(tr("Alle Ergebnisse"), QString());
+    m_resultFilter->addItem(QStringLiteral("erfolgreich"), QStringLiteral("erfolgreich"));
+    m_resultFilter->addItem(QStringLiteral("abgebrochen"), QStringLiteral("abgebrochen"));
+    m_resultFilter->addItem(QStringLiteral("fehlgeschlagen"), QStringLiteral("fehlgeschlagen"));
+    m_resultFilter->addItem(QStringLiteral("ausstehend"), QStringLiteral("ausstehend"));
     m_planBtn = new QPushButton(tr("Belegungsplan (Gantt)"), this);
     m_planBtn->setToolTip(tr("Geplante Aufträge greedy auf geeignete Drucker verteilen (nur Admin)"));
-    // Belegungsplan nur für Admin sichtbar
-    m_planBtn->setVisible(Auth::rolle() == Auth::Admin);
+
+    m_planBtn->setVisible(Auth::role() == Auth::Admin);
     m_resetBtn = new QPushButton(tr("Filter zurücksetzen"), this);
     m_resetBtn->setToolTip(tr("Suche und Ergebnis-Filter auf „Alle“ zurücksetzen"));
-    filter->addWidget(m_suche, 1);
-    filter->addWidget(m_ergebnisFilter);
+    filter->addWidget(m_search, 1);
+    filter->addWidget(m_resultFilter);
     filter->addWidget(m_resetBtn);
     filter->addWidget(m_planBtn);
     layout->addLayout(filter);
 
-    // oben: Protokollansicht auf voller Breite
     auto *detailBox = new QGroupBox(tr("Protokoll / Verlauf / Auswertung"), this);
     auto *dl = new QVBoxLayout(detailBox);
     m_info = new QLabel(detailBox);
     m_info->setWordWrap(true);
     m_plot = new PlotWidget(detailBox);
-    m_kosten = new QLabel(detailBox);
-    m_kosten->setWordWrap(true);
+    m_costLabel = new QLabel(detailBox);
+    m_costLabel->setWordWrap(true);
     dl->addWidget(m_info);
     dl->addWidget(m_plot, 1);
-    dl->addWidget(m_kosten);
+    dl->addWidget(m_costLabel);
 
-    // darunter: Jobliste, Grenze zwischen Plot und Jobliste per Drag verschiebbar
-    m_model = new AuftragModel(store, this);
-    connect(store, &DataStore::datenGeladen, m_model, &AuftragModel::refresh);
-    connect(store, &DataStore::datenGeladen, this, &TeileWidget::initialAuswahl);
+    m_model = new JobModel(store, this);
+    connect(store, &DataStore::dataLoaded, m_model, &JobModel::refresh);
+    connect(store, &DataStore::dataLoaded, this, &PartsWidget::initialAuswahl);
     m_view = new QTableView(this);
-    m_view->setAlternatingRowColors(true);   // Zebra-Muster (Farben via Stylesheet)
+    m_view->setAlternatingRowColors(true);
     m_view->setModel(m_model);
     m_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_view->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -71,102 +71,112 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     auto *splitter = new QSplitter(Qt::Vertical, this);
     splitter->addWidget(detailBox);
     splitter->addWidget(m_view);
-    splitter->setStretchFactor(0, 3);   // Startverteilung wie bisher (3:2)
+    splitter->setStretchFactor(0, 3);
     splitter->setStretchFactor(1, 2);
-    splitter->setChildrenCollapsible(false);   // Plot/Jobliste nicht komplett einklappen
+    splitter->setChildrenCollapsible(false);
     layout->addWidget(splitter);
     m_view->setSortingEnabled(true);
 
-    connect(m_suche, &QLineEdit::textChanged, this, [this]() {
-        m_model->setFilter(m_suche->text(), m_ergebnisFilter->currentData().toString());
+    connect(m_search, &QLineEdit::textChanged, this, [this]() {
+        m_model->setFilter(m_search->text(), m_resultFilter->currentData().toString());
     });
-    connect(m_ergebnisFilter, &QComboBox::currentIndexChanged, this, [this]() {
-        m_model->setFilter(m_suche->text(), m_ergebnisFilter->currentData().toString());
+    connect(m_resultFilter, &QComboBox::currentIndexChanged, this, [this]() {
+        m_model->setFilter(m_search->text(), m_resultFilter->currentData().toString());
     });
     connect(m_resetBtn, &QPushButton::clicked, this, [this]() {
-        m_suche->clear();   // loest textChanged -> setFilter("") aus
-        m_ergebnisFilter->setCurrentIndex(0);
+        m_search->clear();
+        m_resultFilter->setCurrentIndex(0);
     });
-    // Single-Click genügt: Protokoll aktualisiert sich sofort
+
     connect(m_view, &QTableView::clicked, this, [this](const QModelIndex &idx) {
-        if (const Auftrag *a = m_model->auftragAt(idx.row())) zeigeAuftrag(*a);
+        if (const Job *a = m_model->jobAtRow(idx.row())) showJob(*a);
     });
-    connect(m_planBtn, &QPushButton::clicked, this, &TeileWidget::planeAuftraege);
+    connect(m_planBtn, &QPushButton::clicked, this, &PartsWidget::showSchedule);
     connect(m_loader, &ProtocolLoader::fertig, this, [this](const QString &id) {
-        emit statusMeldung(tr("Protokoll %1 im Hintergrund geladen (Cache).").arg(id));
-        // wenn das gerade der angezeigte Auftrag ist: Ansicht aktualisieren
-        if (id == m_aktuellerAuftrag) {
+        emit statusMessage(tr("Protokoll %1 im Hintergrund geladen (Cache).").arg(id));
+
+        if (id == m_currentJob) {
             auto *tabs = findChild<QTabWidget*>();
             Q_UNUSED(tabs);
             for (const auto &a : m_store->auftraege())
-                if (a.auftragId == id) { zeigeAuftrag(a); break; }
+                if (a.jobId == id) { showJob(a); break; }
         }
     });
-    connect(m_loader, &ProtocolLoader::fehler, this, [this](const QString &id, const QString &f) {
-        m_store->addLog(LogEintrag::Protokoll, f, id);
-        emit statusMeldung(tr("Protokollfehler %1: %2").arg(id, f));
+    connect(m_loader, &ProtocolLoader::error, this, [this](const QString &id, const QString &f) {
+        m_store->log(LogEntry::PrintLog, f, id);
+        emit statusMessage(tr("Protokollfehler %1: %2").arg(id, f));
+
+        if (id == m_currentJob) {
+            m_plot->clear();
+            m_info->setText(m_info->text() + tr("<br><i>Kein Protokoll verfügbar: %1</i>").arg(f.toHtmlEscaped()));
+        }
     });
-    m_plot->leeren();
-    // Daten bereits geladen (z. B. nach Login/Sprachwechsel mit UI-Neuaufbau)?
+    m_plot->clear();
+
     if (!store->auftraege().isEmpty())
         initialAuswahl();
 }
 
-void TeileWidget::zeigeAuftrag(const Auftrag &a)
+void PartsWidget::showJob(const Job &a)
 {
-    m_aktuellerAuftrag = a.auftragId;
+    m_currentJob = a.jobId;
     const Material *mat = m_store->material(a.materialId);
-    // Nutzdaten aus den CSVs vor HTML-Rendering escapen (CWE-79)
-    m_info->setText(tr("<b>%1</b> - %2 auf %3 | Material: %4 | Soll: %5 min, %6 g | Ergebnis: %7%8")
-        .arg(a.auftragId.toHtmlEscaped(), a.bauteil.toHtmlEscaped(), a.druckerId.toHtmlEscaped(),
-             (mat ? mat->bezeichnung : a.materialId).toHtmlEscaped())
-        .arg(qRound64(a.dauerSollMin)).arg(qRound64(a.filamentSollG)).arg(a.ergebnis.toHtmlEscaped())
-        .arg(a.fehlercode.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(a.fehlercode.toHtmlEscaped())));
 
-    const auto k = Kostenrechnung::auftrag(a, mat);
-    m_kosten->setText(tr("Kosten: Material %1 € + Maschine %2 € = %3 €")
+    m_info->setText(tr("<b>%1</b> - %2 auf %3 | Material: %4 | Soll: %5 min, %6 g | Ergebnis: %7%8")
+        .arg(a.jobId.toHtmlEscaped(), a.part.toHtmlEscaped(), a.printerId.toHtmlEscaped(),
+             (mat ? mat->description : a.materialId).toHtmlEscaped())
+        .arg(qRound64(a.plannedMinutes)).arg(qRound64(a.plannedFilamentG)).arg(a.jobResult.toHtmlEscaped())
+        .arg(a.errorCode.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(a.errorCode.toHtmlEscaped())));
+
+    const auto k = CostCalculator::computeJobCost(a, mat);
+    m_costLabel->setText(tr("Kosten: Material %1 € + Maschine %2 € = %3 €")
         .arg(qRound64(k.materialEur)).arg(qRound64(k.maschinenEur)).arg(qRound64(k.gesamtEur)));
 
-    if (a.ergebnis == QLatin1String("ausstehend")) {
-        m_plot->leeren();
+    if (a.jobResult == QLatin1String("ausstehend")) {
+        m_plot->clear();
         return;
     }
-    if (!m_loader->cached(a.auftragId))
-        m_loader->loadAsync(a.auftragId);   // Hintergrund laden, Anzeige bei fertigem Signal erneut
-    const Protokoll p = m_loader->load(a.auftragId);
+    if (!m_loader->isCached(a.jobId)) {
+
+        m_loader->loadAsync(a.jobId);
+        m_plot->clear();
+        m_info->setText(m_info->text() + tr("<br><i>Protokoll wird im Hintergrund geladen...</i>"));
+        return;
+    }
+    const PrintLog p = m_loader->load(a.jobId);
     if (!p.valid) {
-        m_plot->leeren();
-        m_info->setText(m_info->text() + tr("<br><i>Kein Protokoll verfügbar: %1</i>").arg(p.fehler.toHtmlEscaped()));
+        m_plot->clear();
+        m_info->setText(m_info->text() + tr("<br><i>Kein Protokoll verfügbar: %1</i>").arg(p.error.toHtmlEscaped()));
         return;
     }
-    m_plot->zeigeProtokoll(p);
-    const Regelguete rg = RegelgueteRechner::werteAus(p.aufheizen, p.druck, p.dueseSollC);
-    if (rg.verfuegbar) {
-        m_kosten->setText(m_kosten->text() + tr("<br>Regelgüte: tr=%1 s, Überschwingen=%2 K (%3 %), Ausregelzeit=%4, Ø-Abweichung=%5 K, max=%6 K")
-            .arg(qRound64(rg.anstiegszeitS)).arg(qRound64(rg.ueberschwingenK))
-            .arg(qRound64(rg.ueberschwingenProzent))
-            .arg(rg.ausgeregelt ? QString::number(rg.ausregelzeitS, 'f', 0) + " s" : tr("nicht ausgeregelt"))
-            .arg(qRound64(rg.mittlereAbweichungK)).arg(qRound64(rg.maximaleAbweichungK)));
-        const auto bef = Fehlererkennung::analysiere(p, rg, mat);
-        if (bef.schlechtEingestellt || !bef.fehlerbilder.isEmpty()) {
+    m_plot->showProtocol(p);
+    const ControlQuality rg = ControlQualityCalculator::computeValues(p.heatUp, p.printPhase, p.nozzleTargetC);
+    if (rg.available) {
+        m_costLabel->setText(m_costLabel->text() + tr("<br>Regelgüte: tr=%1 s, Überschwingen=%2 K (%3 %), Ausregelzeit=%4, Ø-Abweichung=%5 K, max=%6 K")
+            .arg(qRound64(rg.riseTimeS)).arg(qRound64(rg.overshootK))
+            .arg(qRound64(rg.overshootPercent))
+            .arg(rg.settled ? QString::number(rg.settlingTimeS, 'f', 0) + " s" : tr("nicht ausgeregelt"))
+            .arg(qRound64(rg.meanDeviationK)).arg(qRound64(rg.maxDeviationK)));
+        const auto bef = ErrorDetection::detectFaults(p, rg, mat);
+        if (bef.poorlyTuned || !bef.errorPatterns.isEmpty()) {
             QStringList fb;
-            if (bef.schlechtEingestellt) fb.append(tr("Regler schlecht eingestellt"));
-            fb.append(bef.fehlerbilder);
-            m_store->addLog(LogEintrag::Protokoll,
-                tr("Auftrag %1: %2").arg(a.auftragId, fb.join(QStringLiteral("; "))), a.auftragId);
+            if (bef.poorlyTuned) fb.append(tr("Regler schlecht eingestellt"));
+            fb.append(bef.errorPatterns);
+            m_store->log(LogEntry::PrintLog,
+                tr("Auftrag %1: %2").arg(a.jobId, fb.join(QStringLiteral("; "))), a.jobId);
         }
     }
 }
 
-void TeileWidget::initialAuswahl()
+void PartsWidget::initialAuswahl()
 {
-    // Default-Sortierung: nach Startzeit absteigend (neueste zuerst)
-    m_model->sort(AuftragModel::ColStart, Qt::DescendingOrder);
-    // letzten beendeten Druck auswählen (max. Endzeit unter den fertigen Aufträgen)
-    const Auftrag *last = nullptr;
+
+    m_model->sort(JobModel::ColStart, Qt::DescendingOrder);
+
+    const Job *last = nullptr;
     for (int i = 0; i < m_model->rowCount(); ++i) {
-        const Auftrag *a = m_model->auftragAt(i);
-        if (!a || a->ergebnis == QLatin1String("ausstehend") || !a->ende.isValid())
+        const Job *a = m_model->jobAtRow(i);
+        if (!a || a->jobResult == QLatin1String("ausstehend") || !a->ende.isValid())
             continue;
         if (!last || a->ende > last->ende)
             last = a;
@@ -174,44 +184,43 @@ void TeileWidget::initialAuswahl()
     if (!last)
         return;
     for (int i = 0; i < m_model->rowCount(); ++i) {
-        if (m_model->auftragAt(i) == last) {
+        if (m_model->jobAtRow(i) == last) {
             m_view->setCurrentIndex(m_model->index(i, 0));
             m_view->selectRow(i);
-            zeigeAuftrag(*last);   // Protokoll + Plot + Regelgüte sofort anzeigen
+            showJob(*last);
             break;
         }
     }
 }
 
-void TeileWidget::planeAuftraege()
+void PartsWidget::showSchedule()
 {
-    // Belegungsplan nur als Admin
-    if (Auth::rolle() != Auth::Admin) {
+
+    if (Auth::role() != Auth::Admin) {
         QMessageBox::information(this, tr("Rechte"),
             tr("Der Belegungsplan ist nur für die Rolle „admin“ verfügbar."));
         return;
     }
-    QList<Auftrag> ausstehend;
+    QList<Job> pending;
     for (const auto &a : m_store->auftraege())
-        if (a.ergebnis == QLatin1String("ausstehend"))
-            ausstehend.append(a);
-    const auto zuweisungen = Planung::greedy(ausstehend, m_store->drucker(), *m_store,
+        if (a.jobResult == QLatin1String("ausstehend"))
+            pending.append(a);
+    const auto assignments = Planning::assignJobsGreedy(pending, m_store->printer(), *m_store,
                                              QDateTime::currentDateTime());
-    QStringList druckerIds;
-    for (const auto &z : zuweisungen)
-        if (!druckerIds.contains(z.druckerId)) druckerIds.append(z.druckerId);
-    m_store->addLog(LogEintrag::System,
+    QStringList printerIds;
+    for (const auto &z : assignments)
+        if (!printerIds.contains(z.printerId)) printerIds.append(z.printerId);
+    m_store->log(LogEntry::System,
         tr("Greedy-Planung: %1 geplante Aufträge auf %2 Zuweisungen verteilt")
-            .arg(ausstehend.size()).arg(zuweisungen.size()));
-    emit statusMeldung(tr("Planung: %1 Zuweisungen (siehe Belegungsplan).").arg(zuweisungen.size()));
+            .arg(pending.size()).arg(assignments.size()));
+    emit statusMessage(tr("Planung: %1 Zuweisungen (siehe Belegungsplan).").arg(assignments.size()));
 
-    // Belegungsplan als Popup-Dialog
     QDialog dlg(this);
     dlg.setWindowTitle(tr("Belegungsplan (Gantt) - geplante Aufträge"));
     dlg.resize(900, 500);
     auto *dl = new QVBoxLayout(&dlg);
     auto *gantt = new GanttWidget(&dlg);
-    gantt->setPlanung(zuweisungen, druckerIds);
+    gantt->setSchedule(assignments, printerIds);
     dl->addWidget(gantt);
     auto *btns = new QDialogButtonBox(QDialogButtonBox::Close, &dlg);
     connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);

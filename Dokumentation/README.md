@@ -66,20 +66,57 @@ Datenstruktur (im Datenordner):
 ## Funktionen
 
 - Vier Haupttabs: **Druckerliste**, **Gedruckte Teile**, **Material**, **Fehlerlog**
-- CSV-Import mit Plausibilitätsprüfungen; robustes Verhalten bei defekten Dateien
+- CSV-Import mit Plausibilitätsprüfungen (Duplikat-IDs, Wertebereiche, Referenzen,
+  ungültige Zahlen/Daten werden geloggt); robustes Verhalten bei defekten Dateien
 - Druckerliste mit Suche/Filter (ID, Modell, Standort, Status, Kinematik), Sortierung
-- Detaildialog je Drucker (Stammdaten + Aufträge + Temperaturverlauf + Regelgüte)
-- Stammdaten bearbeiten (rollenabhängig), Export als `drucker_out.csv` / `auftraege_out.csv`
+- Detaildialog je Drucker (Stammdaten + Aufträge + Wartungen + Temperaturverlauf + Regelgüte)
+- Stammdaten bearbeiten (rollenabhängig: Stammdaten nur admin, PID nur technik/admin),
+  Export als `drucker_out.csv` / `auftraege_out.csv`
 - Lazy Loading der JSON-Druckprotokolle über den Master-Index, LRU-Cache (20),
-  Laden im Hintergrund (QtConcurrent)
+  nicht-blockierendes Laden im Hintergrund (QtConcurrent)
 - Regelgüte: Anstiegszeit, Überschwingen (K/%), Ausregelzeit (±2 K),
   mittlere/maximale Regelabweichung der Druckphase (Pausen & Wiederaufheizen ausgeschlossen)
 - Fehlererkennung in Protokollen (schlechte Reglereinstellung, Düsenverstopfung,
-  Heizungsausfall, verrauschter Fühler, unpassende Betttemperatur)
-- Auftragsplanung (Greedy) für ausstehende Aufträge inkl. Gantt-Darstellung
-- Light-/Darkmode zur Laufzeit umschaltbar, Deutsch/Englisch umschaltbar
-- SQLite-Persistenz (Qt SQL) neben CSV-Import/-Export
-- Eigene Erweiterungen: PID-Simulation, Kostenrechnung je Auftrag, Berichtsexport (CSV)
+  Heizungsausfall, verrauschter Fühler, unpassende Betttemperatur) mit dokumentierten Schwellen
+- Auftragsplanung (Greedy/SJF nach Soll-Dauer, freie Zeit ab letzter Belegung/Wartung)
+  für ausstehende Aufträge inkl. Gantt-Darstellung (nur admin)
+- Light-/Darkmode zur Laufzeit umschaltbar, Deutsch/Englisch umschaltbar (vollständig übersetzt)
+- SQLite-Import **und** -Export (Qt SQL, Menü Datei) neben CSV-Import/-Export; Duplikate
+  werden geloggt (letzter Eintrag gewinnt, konsistent zur Map)
+- Eigene Erweiterungen:
+  - **PID-Simulation** (`src/pidsim.*`): physikalische Strecke (PT2 + Totzeit + Stellglied,
+    Verluste linear + Strahlung ~T⁴, auf reale Arbeitspunkte kalibriert), Regler mit
+    Anti-Windup und D auf Messwert, Störgrößen (Extrusion, Lüfter, Fühlerrauschen),
+    Rangliste mehrerer Parameter-Kandidaten, optionaler Fit der Strecke aus dem neuesten
+    echten Aufheizprotokoll des Druckers
+  - **Kostenrechnung** je Auftrag (Material + Maschinenstunden, Annahme 12 €/h dokumentiert)
+  - **Berichtsexport** (Wochenbericht, Kostenübersicht, Wartungsplan als CSV)
+
+## Code-Konventionen
+
+- Alle Bezeichner (Klassen, Funktionen, Variablen) sind **Englisch**; **Kommentare sind Deutsch**
+- Trennung in `src/`: Datenhaltung (`datastore`, `datatypes`), Datei-I/O (`csvio`, `protocol`),
+  Datenbank (SQLite in `datastore`), fachliche Logik (`analyse`, `regelguete`, `pidsim`),
+  GUI (`mainwindow`, `*widget`, `dialogs`, `plotwidget`, `ganttwidget`, `tablemodels`), Theme-Daten (`theme.h`)
+- UI-Texte bleiben Deutsch (Quellsprache) und werden über `translations/*.ts` ins Englische übersetzt
+
+## Hinweis zur Doku-PDF (Abweichungen)
+
+Die `Dokumentation_PrintFarm_Gruppe_03.pdf` nennt an zwei Stellen noch einen
+älteren Stand und weicht damit vom Code ab (eine Neuerzeugung der PDF war nicht
+praktikabel; diese README und die Anforderungsmatrix dokumentieren hier den
+tatsächlichen Stand):
+
+- **Reglersimulation:** Die PDF behauptet in „Bekannte Einschränkungen“ ein
+  „Streckenmodell erster Ordnung“. Der Code (`src/pidsim.h` / `src/pidsim.cpp`)
+  simuliert eine **PT2-Strecke + Totzeit** (Block- und Fühlerkapazität,
+  SSR-Ansprechverzögerung, Totzeit-Ringpuffer) mit temperaturabhängigen
+  Verlusten (linear + Strahlung ~T^4).
+- **Auftragsplanung:** Die PDF beschreibt „frühester Fertigstellungszeitpunkt“.
+  Der Code (`Planung::greedy` in `src/analyse.cpp`) sortiert die ausstehenden
+  Aufträge als **SJF nach `dauerSollMin`** (kürzester Job zuerst) und wählt je
+  Auftrag den bereitstehenden, material-geeigneten Drucker mit dem frühesten
+  Fertigstellungszeitpunkt.
 
 ## Tests
 
@@ -89,12 +126,14 @@ als eigenes Test-Target registrieren.
 
 Bestehende Test-Targets:
 
-- `tst_printfarm`: fachliche Logik ohne GUI: CSV-Import/Export, Validierung,
-  Regelgüte inkl. Pausenbehandlung, Rechte (Passwort-Login), Planung, Kosten,
-  PID-Simulation, SQLite-Persistenz, Lazy Loading sowie Security-Tests
+- `tst_printfarm`: fachliche Logik ohne GUI (53 Tests): CSV-Import/Export, Validierung,
+  Regelgüte inkl. Pausenbehandlung, Rechte (Passwort-Login + Logout), Planung, Kosten,
+  PID-Simulation (inkl. Realismus gegen echte Daten, Rangliste, Fit, Windup, T_max),
+  SQLite-Persistenz (inkl. Duplikate, fehlende Tabellen), Lazy Loading sowie Security-Tests
   (Path Traversal, CSV-Formelinjection)
-- `tst_gui`: GUI-QA headless (offscreen) mit den echten Projektdaten:
-  Tabs, Filter/Suche, Sortierung, Dialoge, Theme/Sprache, Plot
+- `tst_gui`: GUI-QA headless (offscreen) mit den echten Projektdaten (35 Tests):
+  Tabs, Filter/Suche, Sortierung, Dialoge, Theme/Sprache (EN ohne deutsche Fallbacks),
+  Plot, Rangliste/Fit im PID-Dialog, Rechte-Trennung, Wartungs-Tabelle
 
 Ausführen (nach dem Build):
 

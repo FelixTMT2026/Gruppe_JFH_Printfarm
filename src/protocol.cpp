@@ -1,3 +1,5 @@
+// Implementierung siehe protocol.h.
+
 #include "protocol.h"
 #include "csvio.h"
 #include <QFile>
@@ -8,13 +10,10 @@
 #include <QJsonArray>
 #include <QtConcurrent/QtConcurrent>
 
-// Maximale Groesse einer Protokolldatei (DoS-Schutz gegen riesige Dateien)
-static constexpr qint64 kMaxProtokollBytes = 20 * 1024 * 1024;   // 20 MB
+static constexpr qint64 kMaxLogBytes = 20 * 1024 * 1024;
 
-// Pfad aus dem Master-Index gegen Path Traversal sichern:
-// liefert den bereinigten absoluten Pfad, wenn er innerhalb des Datenordners
-// liegt, sonst leer (CWE-22).
-static QString sichererPfad(const QString &dataFolder, const QString &rel)
+// Path-Traversal-Schutz (CWE-22): nur Pfade innerhalb des Datenordners zulassen.
+static QString safeProtocolPath(const QString &dataFolder, const QString &rel)
 {
     if (rel.isEmpty() || QDir::isAbsolutePath(rel))
         return {};
@@ -32,13 +31,14 @@ static QString sichererPfad(const QString &dataFolder, const QString &rel)
 
 ProtocolLoader::ProtocolLoader(QObject *parent) : QObject(parent) {}
 
+// Master-Index laden: auftragId -> relativer Pfad der Protokoll-JSON.
 int ProtocolLoader::loadIndex(const QString &dataFolder)
 {
     m_dataFolder = dataFolder;
     m_index.clear();
     bool ok = false;
     QList<CsvError> errors;
-    const auto rows = CsvIo::read(dataFolder + "/master_protokoll_index.csv", &ok, &errors);
+    const auto rows = CsvIo::readCsv(dataFolder + "/master_protokoll_index.csv", &ok, &errors);
     if (!ok)
         return 0;
     for (int i = 1; i < rows.size(); ++i) {
@@ -49,162 +49,155 @@ int ProtocolLoader::loadIndex(const QString &dataFolder)
     return m_index.size();
 }
 
-QString ProtocolLoader::pfadFuer(const QString &auftragId) const
+QString ProtocolLoader::pathForJob(const QString &jobId) const
 {
-    return m_index.value(auftragId);
+    return m_index.value(jobId);
 }
 
-bool ProtocolLoader::cached(const QString &auftragId) const
+bool ProtocolLoader::isCached(const QString &jobId) const
 {
-    return m_cache.contains(auftragId);
+    return m_cache.contains(jobId);
 }
 
-void ProtocolLoader::cachePut(const QString &auftragId, const Protokoll &p)
+void ProtocolLoader::putInCache(const QString &jobId, const PrintLog &p)
 {
-    m_lru.removeAll(auftragId);
-    m_lru.append(auftragId);
-    m_cache.insert(auftragId, std::make_shared<Protokoll>(p));
+    m_lru.removeAll(jobId);
+    m_lru.append(jobId);
+    m_cache.insert(jobId, std::make_shared<PrintLog>(p));
     while (m_lru.size() > kCacheSize) {
-        const QString alt = m_lru.takeFirst();
-        m_cache.remove(alt);
+        const QString original = m_lru.takeFirst();
+        m_cache.remove(original);
     }
 }
 
-static QVector<Messpunkt> parsePhase(const QJsonObject &phase, bool isDruck, Protokoll &out)
+static QVector<Sample> parsePhaseJson(const QJsonObject &phase, bool isPrintPhase)
 {
-    QVector<Messpunkt> punkte;
-    const QJsonArray zeit = phase["zeit_s"].toArray();
-    const QJsonArray dueseIst = phase["duese_ist_c"].toArray();
-    const QJsonArray bettIst = phase["bett_ist_c"].toArray();
-    const QJsonArray heiz = phase["heizleistung_duese_prozent"].toArray();
-    const QJsonArray dueseSoll = phase["duese_soll_c"].toArray();
-    const QJsonArray luefter = phase["luefter_prozent"].toArray();
-    const QJsonArray schicht = phase["schicht"].toArray();
-    const QJsonArray strom = phase["extruder_strom_a"].toArray();
-    const int n = zeit.size();
+    QVector<Sample> punkte;
+    const QJsonArray times = phase["zeit_s"].toArray();
+    const QJsonArray nozzleActual = phase["duese_ist_c"].toArray();
+    const QJsonArray bedActual = phase["bett_ist_c"].toArray();
+    const QJsonArray heater = phase["heizleistung_duese_prozent"].toArray();
+    const QJsonArray nozzleTarget = phase["duese_soll_c"].toArray();
+    const QJsonArray fan = phase["luefter_prozent"].toArray();
+    const QJsonArray layer = phase["schicht"].toArray();
+    const QJsonArray current = phase["extruder_strom_a"].toArray();
+    const int n = times.size();
     punkte.reserve(n);
     for (int i = 0; i < n; ++i) {
-        Messpunkt m;
-        m.zeitS = zeit[i].toDouble();
-        m.dueseIstC = i < dueseIst.size() ? dueseIst[i].toDouble() : 0;
-        m.bettIstC = i < bettIst.size() ? bettIst[i].toDouble() : 0;
-        m.heizleistungProzent = i < heiz.size() ? heiz[i].toDouble() : 0;
-        if (isDruck) {
-            m.dueseSollC = i < dueseSoll.size() ? dueseSoll[i].toDouble() : 0;
-            m.luefterProzent = i < luefter.size() ? luefter[i].toDouble() : 0;
-            m.schicht = i < schicht.size() ? schicht[i].toInt() : 0;
-            m.extruderStromA = i < strom.size() ? strom[i].toDouble() : 0;
+        Sample m;
+        m.timeS = times[i].toDouble();
+        m.nozzleActualC = i < nozzleActual.size() ? nozzleActual[i].toDouble() : 0;
+        m.bedActualC = i < bedActual.size() ? bedActual[i].toDouble() : 0;
+        m.heaterPercent = i < heater.size() ? heater[i].toDouble() : 0;
+        if (isPrintPhase) {
+            m.nozzleTargetC = i < nozzleTarget.size() ? nozzleTarget[i].toDouble() : 0;
+            m.fanPercent = i < fan.size() ? fan[i].toDouble() : 0;
+            m.layer = i < layer.size() ? layer[i].toInt() : 0;
+            m.extruderCurrentA = i < current.size() ? current[i].toDouble() : 0;
         }
         punkte.append(m);
     }
-    if (isDruck)
-        out.abtastungDruckS = phase["abtastung_s"].toDouble(30);
-    else
-        out.abtastungAufheizenS = phase["abtastung_s"].toDouble(1);
     return punkte;
 }
 
-Protokoll ProtocolLoader::parseJson(const QString &path, const QString &auftragId) const
+PrintLog ProtocolLoader::parseProtocolJson(const QString &path, const QString &jobId) const
 {
-    Protokoll p;
-    p.auftragId = auftragId;
+    PrintLog p;
+    p.jobId = jobId;
     QFile f(path);
-    if (QFileInfo(path).size() > kMaxProtokollBytes) {
-        p.fehler = QStringLiteral("Protokolldatei zu gross (> %1 MB), Laden abgelehnt: %2")
-                       .arg(kMaxProtokollBytes / (1024 * 1024)).arg(path);
+    if (QFileInfo(path).size() > kMaxLogBytes) {
+        p.error = QStringLiteral("Protokolldatei zu gross (> %1 MB), Laden abgelehnt: %2")
+                       .arg(kMaxLogBytes / (1024 * 1024)).arg(path);
         return p;
     }
     if (!f.open(QIODevice::ReadOnly)) {
-        p.fehler = QStringLiteral("Protokolldatei nicht lesbar: %1").arg(path);
+        p.error = QStringLiteral("Protokolldatei nicht lesbar: %1").arg(path);
         return p;
     }
     QJsonParseError perr;
     const QJsonDocument doc = QJsonDocument::fromJson(f.readAll(), &perr);
     if (perr.error != QJsonParseError::NoError || !doc.isObject()) {
-        p.fehler = QStringLiteral("Ungültiges JSON (%1): %2").arg(perr.errorString(), path);
+        p.error = QStringLiteral("Ungültiges JSON (%1): %2").arg(perr.errorString(), path);
         return p;
     }
     const QJsonObject root = doc.object();
-    const QJsonObject auftrag = root["auftrag"].toObject();
-    p.druckerId = auftrag["drucker_id"].toString();
-    p.materialId = auftrag["material_id"].toString();
-    p.dueseSollC = auftrag["duesentemp_soll_c"].toDouble();
-    p.bettSollC = auftrag["betttemp_soll_c"].toDouble();
-    p.schichtanzahl = auftrag["schichtanzahl"].toInt();
-    p.aufheizen = parsePhase(root["aufheizen"].toObject(), false, p);
-    p.druck = parsePhase(root["druck"].toObject(), true, p);
+    const QJsonObject job = root["auftrag"].toObject();
+    p.printerId = job["drucker_id"].toString();
+    p.nozzleTargetC = job["duesentemp_soll_c"].toDouble();
+    p.bedTargetC = job["betttemp_soll_c"].toDouble();
+    p.heatUp = parsePhaseJson(root["aufheizen"].toObject(), false);
+    p.printPhase = parsePhaseJson(root["druck"].toObject(), true);
     for (const auto &ev : root["ereignisse"].toArray()) {
         const QJsonObject o = ev.toObject();
-        p.ereignisse.append({o["zeit_s"].toDouble(), o["typ"].toString(), o["text"].toString()});
+        p.events.append({o["zeit_s"].toDouble(), o["typ"].toString()});
     }
-    p.valid = !p.aufheizen.isEmpty();
+    p.valid = !p.heatUp.isEmpty();
     if (!p.valid)
-        p.fehler = QStringLiteral("Protokoll enthält keine Aufheizphase: %1").arg(path);
+        p.error = QStringLiteral("Protokoll enthält keine Aufheizphase: %1").arg(path);
     return p;
 }
 
-Protokoll ProtocolLoader::load(const QString &auftragId)
+PrintLog ProtocolLoader::load(const QString &jobId)
 {
-    if (auto it = m_cache.find(auftragId); it != m_cache.end()) {
-        m_lru.removeAll(auftragId);
-        m_lru.append(auftragId);
+    if (auto it = m_cache.find(jobId); it != m_cache.end()) {
+        m_lru.removeAll(jobId);
+        m_lru.append(jobId);
         return *it.value();
     }
-    const QString rel = m_index.value(auftragId);
+    const QString rel = m_index.value(jobId);
     if (rel.isEmpty()) {
-        Protokoll p;
-        p.auftragId = auftragId;
-        p.fehler = QStringLiteral("Kein Protokoll im Master-Index für diesen Auftrag");
+        PrintLog p;
+        p.jobId = jobId;
+        p.error = QStringLiteral("Kein Protokoll im Master-Index für diesen Auftrag");
         return p;
     }
-    const QString pfad = sichererPfad(m_dataFolder, rel);
+    const QString pfad = safeProtocolPath(m_dataFolder, rel);
     if (pfad.isEmpty()) {
-        Protokoll p;
-        p.auftragId = auftragId;
-        p.fehler = QStringLiteral("Pfad aus dem Master-Index liegt ausserhalb des Datenordners - abgelehnt");
+        PrintLog p;
+        p.jobId = jobId;
+        p.error = QStringLiteral("Pfad aus dem Master-Index liegt ausserhalb des Datenordners - abgelehnt");
         return p;
     }
-    Protokoll p = parseJson(pfad, auftragId);
+    PrintLog p = parseProtocolJson(pfad, jobId);
     if (p.valid)
-        cachePut(auftragId, p);
+        putInCache(jobId, p);
     return p;
 }
 
-void ProtocolLoader::loadAsync(const QString &auftragId)
+void ProtocolLoader::loadAsync(const QString &jobId)
 {
-    if (m_cache.contains(auftragId)) {
-        emit fertig(auftragId);
+    if (m_cache.contains(jobId)) {
+        emit fertig(jobId);
         return;
     }
     const QString dataFolder = m_dataFolder;
-    const QString rel = m_index.value(auftragId);
-    // pro Anfrage ein eigener Watcher, damit parallele Anforderungen nicht
-    // kollidieren; Ergebnis landet thread-sicher im Cache (GUI-Thread via Signal)
-    auto *watcher = new QFutureWatcher<Protokoll>(this);
-    connect(watcher, &QFutureWatcher<Protokoll>::finished, this, [this, watcher, auftragId]() {
-        const Protokoll p = watcher->result();
+    const QString rel = m_index.value(jobId);
+
+    auto *watcher = new QFutureWatcher<PrintLog>(this);
+    connect(watcher, &QFutureWatcher<PrintLog>::finished, this, [this, watcher, jobId]() {
+        const PrintLog p = watcher->result();
         watcher->deleteLater();
         if (p.valid) {
-            cachePut(p.auftragId, p);
-            emit fertig(p.auftragId);
+            putInCache(p.jobId, p);
+            emit fertig(p.jobId);
         } else {
-            emit fehler(p.auftragId, p.fehler);
+            emit error(p.jobId, p.error);
         }
     });
-    watcher->setFuture(QtConcurrent::run([this, dataFolder, rel, auftragId]() {
+    watcher->setFuture(QtConcurrent::run([this, dataFolder, rel, jobId]() {
         if (rel.isEmpty()) {
-            Protokoll p;
-            p.auftragId = auftragId;
-            p.fehler = QStringLiteral("Kein Protokoll im Master-Index für diesen Auftrag");
+            PrintLog p;
+            p.jobId = jobId;
+            p.error = QStringLiteral("Kein Protokoll im Master-Index für diesen Auftrag");
             return p;
         }
-        const QString pfad = sichererPfad(dataFolder, rel);
+        const QString pfad = safeProtocolPath(dataFolder, rel);
         if (pfad.isEmpty()) {
-            Protokoll p;
-            p.auftragId = auftragId;
-            p.fehler = QStringLiteral("Pfad aus dem Master-Index liegt ausserhalb des Datenordners - abgelehnt");
+            PrintLog p;
+            p.jobId = jobId;
+            p.error = QStringLiteral("Pfad aus dem Master-Index liegt ausserhalb des Datenordners - abgelehnt");
             return p;
         }
-        return parseJson(pfad, auftragId);
+        return parseProtocolJson(pfad, jobId);
     }));
 }

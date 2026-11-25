@@ -1,8 +1,10 @@
+// Implementierung siehe csvio.h.
+
 #include "csvio.h"
 #include <QTextStream>
 #include <QFileInfo>
 
-QList<QStringList> CsvIo::read(const QString &path, bool *ok, QList<CsvError> *errors)
+QList<QStringList> CsvIo::readCsv(const QString &path, bool *ok, QList<CsvError> *errors)
 {
     QList<QStringList> rows;
     QFile f(path);
@@ -13,15 +15,15 @@ QList<QStringList> CsvIo::read(const QString &path, bool *ok, QList<CsvError> *e
     }
     QTextStream in(&f);
     in.setEncoding(QStringConverter::Utf8);
-    int zeile = 0;
+    int lineNo = 0;
     while (!in.atEnd()) {
         const QString line = in.readLine();
-        ++zeile;
+        ++lineNo;
         if (line.trimmed().isEmpty())
             continue;
-        // DoS-Schutz: absurd lange Zeilen ablehnen statt komplett in den RAM zu ziehen
+
         if (line.size() > 1024 * 1024) {
-            if (errors) errors->append({zeile, QStringLiteral("Zeile zu lang (> 1 MB), uebersprungen")});
+            if (errors) errors->append({lineNo, QStringLiteral("Zeile zu lang (> 1 MB), uebersprungen")});
             if (ok) *ok = false;
             continue;
         }
@@ -31,7 +33,7 @@ QList<QStringList> CsvIo::read(const QString &path, bool *ok, QList<CsvError> *e
     return rows;
 }
 
-bool CsvIo::write(const QString &path, const QList<QStringList> &rows, QString *errorOut)
+bool CsvIo::writeCsv(const QString &path, const QList<QStringList> &rows, QString *errorOut)
 {
     QFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
@@ -47,9 +49,7 @@ bool CsvIo::write(const QString &path, const QList<QStringList> &rows, QString *
 
 QStringList CsvIo::splitLine(const QString &line)
 {
-    // RFC-4180-artig: Felder mit Komma/Quote/Umbruch stehen in doppelten Quotes
-    // ("" = escaped quote). Die vorliegenden Projektdaten haben keine Quotes,
-    // bleiben also unverändert kompatibel.
+
     QStringList out;
     QString cur;
     bool inQuotes = false;
@@ -81,10 +81,11 @@ QStringList CsvIo::splitLine(const QString &line)
     return out;
 }
 
+// Formel-Injection-Schutz (CWE-1236): Felder mit fuehrendem =/+/-/@ werden
+// mit Apostroph entschaerft, damit Tabellenkalkulationen sie nicht ausfuehren.
 QString CsvIo::joinLine(const QStringList &fields)
 {
-    // Felder, die in Tabellenkalkulationen als Formel interpretiert wuerden
-    // (CWE-1236), mit fuehrendem Apostroph entschaerfen.
+
     auto formelGefaehrlich = [](const QString &f) {
         if (f.isEmpty()) return false;
         const QChar c = f.at(0);

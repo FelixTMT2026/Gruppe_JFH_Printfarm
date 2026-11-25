@@ -1,18 +1,17 @@
+// Tab 4 (Fehlerlog): Log-Tabelle mit Kategoriefilter.
 #pragma once
-// Tab 4 "Fehlerlog": Import-, Validierungs-, Datei- und Protokollfehler
-// unterscheidbar nach Kategorie, mit Filter.
 
 #include "datastore.h"
 #include "tablemodels.h"
 #include <QWidget>
 
-class FehlerlogWidget : public QWidget {
+class ErrorLogWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit FehlerlogWidget(DataStore *store, QWidget *parent = nullptr);
+    explicit ErrorLogWidget(DataStore *store, QWidget *parent = nullptr);
 private:
     DataStore *m_store;
     LogModel *m_model;
-    class QComboBox *m_katFilter;
+    class QComboBox *m_categoryFilter;
     class QPushButton *m_resetBtn;
 };

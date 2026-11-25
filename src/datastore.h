@@ -1,6 +1,5 @@
+// Zentrale Datenhaltung: CSV/SQLite-Import/Export, Plausibilitaet, Log, Statistik.
 #pragma once
-// Zentraler Datenspeicher: lädt die globalen CSV-Dateien, hält alle Stammdaten
-// im Speicher, führt Plausibilitätsprüfungen durch und exportiert CSV/SQLite.
 
 #include "datatypes.h"
 #include <QObject>
@@ -12,65 +11,62 @@ class DataStore : public QObject {
 public:
     explicit DataStore(QObject *parent = nullptr);
 
-    // Lädt alle globalen CSVs aus dem Datenordner. Rückgabe: true, wenn die
-    // Pflichtdateien (drucker/modelle/materialien/auftraege) geladen wurden.
-    // Fehler landen in log() und im Fehlerlog.
     bool loadFromFolder(const QString &folder);
     QString dataFolder() const { return m_dataFolder; }
 
-    // Export der (ggf. geänderten) Stammdaten als *_out.csv in gewählten Ordner.
     bool exportCsv(const QString &folder, QString *errorOut = nullptr) const;
 
-    // Persistenz-Upgrade: SQLite-Import/Export (Qt SQL).
     bool exportSqlite(const QString &dbPath, QString *errorOut = nullptr) const;
     bool importSqlite(const QString &dbPath);
 
-    const QList<Drucker> &drucker() const { return m_drucker; }
-    const QList<Modell> &modelle() const { return m_modelle; }
+    const QList<Printer> &printer() const { return m_printers; }
+    const QList<DeviceModel> &models() const { return m_models; }
     const QList<Material> &materialien() const { return m_materialien; }
-    const QList<Auftrag> &auftraege() const { return m_auftraege; }
-    const QList<Wartung> &wartungen() const { return m_wartungen; }
-    const QList<LogEintrag> &log() const { return m_log; }
+    const QList<Job> &auftraege() const { return m_auftraege; }
+    const QList<Maintenance> &maintenances() const { return m_maintenances; }
+    const QList<LogEntry> &log() const { return m_log; }
 
-    const Modell *modell(const QString &id) const;
+    const DeviceModel *model(const QString &id) const;
     const Material *material(const QString &id) const;
-    const Drucker *drucker(const QString &id) const;
-    QList<Auftrag> auftraegeOfDrucker(const QString &druckerId) const;
+    const Printer *printer(const QString &id) const;
+    QList<Job> jobsOfPrinter(const QString &printerId) const;
 
-    // Stammdaten-Änderung (mit Rechteprüfung durch Aufrufer) + Logeintrag.
-    bool updateDrucker(const Drucker &d);
+    bool updatePrinter(const Printer &d);
 
-    void addLog(LogEintrag::Kategorie kat, const QString &meldung,
-                const QString &auftragId = QString()) const;
+    static constexpr int kMaxLogEntries = 5000;
 
-    // Statistik-Hilfen (Erweiterung 1).
-    double erfolgsquoteDrucker(const QString &druckerId) const; // 0..1, -1 = keine
-    double filamentverbrauchG(const QString &druckerId) const;   // Summe Soll
-    double materialkostenEur(const QString &druckerId) const;
-    // durchschnittlicher Verbrauch [kg/Woche] je Material, gerechnet aus den
-    // erfolgreichen Auftraegen ueber die gesamte Zeitspanne der Daten
-    double durchschnWochenverbrauchKg(const QString &materialId) const;
+    void log(LogEntry::Category category, const QString &message,
+                const QString &jobId = QString()) const;
+
+    double successRateOfPrinter(const QString &printerId) const;
+    double filamentUsedGrams(const QString &printerId) const;
+    double materialCostEur(const QString &printerId) const;
+
+    double meanWeeklyConsumptionKg(const QString &materialId) const;
 
 signals:
     void logChanged();
-    void datenGeladen();   // nach erfolgreichem Laden/Import der Stammdaten
+    void dataLoaded();
 
 private:
-    bool loadDrucker(const QString &path);
-    bool loadModelle(const QString &path);
-    bool loadMaterialien(const QString &path);
-    bool loadAuftraege(const QString &path);
-    bool loadWartungen(const QString &path);
-    void plausibilitaet();   // gegenseitige Prüfungen, Ergebnis ins Log
+    bool loadPrinters(const QString &path);
+    bool loadModels(const QString &path);
+    bool loadMaterials(const QString &path);
+    bool loadJobs(const QString &path);
+    bool loadMaintenances(const QString &path);
+    void validateConsistency();
+    void checkDuplicateIds();
+    void validatePrinters(int &error);
+    void validateJobs(int &error);
 
     QString m_dataFolder;
-    QList<Drucker> m_drucker;
-    QList<Modell> m_modelle;
+    QList<Printer> m_printers;
+    QList<DeviceModel> m_models;
     QList<Material> m_materialien;
-    QList<Auftrag> m_auftraege;
-    QList<Wartung> m_wartungen;
-    mutable QList<LogEintrag> m_log;
-    QHash<QString, const Modell*> m_modellMap;
+    QList<Job> m_auftraege;
+    QList<Maintenance> m_maintenances;
+    mutable QList<LogEntry> m_log;
+    QHash<QString, const DeviceModel*> m_modelMap;
     QHash<QString, const Material*> m_materialMap;
-    QHash<QString, const Drucker*> m_druckerMap;
+    QHash<QString, const Printer*> m_printerMap;
 };

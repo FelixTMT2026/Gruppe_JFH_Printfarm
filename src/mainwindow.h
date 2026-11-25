@@ -1,6 +1,5 @@
+// Hauptfenster: vier Tabs, Menues, Light/Darkmode, Sprachumschaltung, Login.
 #pragma once
-// Hauptfenster: genau vier Haupttabs in der vorgeschriebenen Reihenfolge,
-// Menü mit Datenordner-Wahl, Export, Login, Theme (Light/Dark) und Sprache.
 
 #include "datastore.h"
 #include "protocol.h"
@@ -11,24 +10,25 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    bool ladeDatenordner(const QString &folder);
+    bool loadDataFolder(const QString &folder);
     DataStore *store() const { return m_store; }
     ProtocolLoader *loader() const { return m_loader; }
 protected:
-    void keyPressEvent(class QKeyEvent *e) override;   // "f" ausserhalb von Textfeldern = Vollbild
+    void keyPressEvent(class QKeyEvent *e) override;
 private:
-    void bauUI();
-    void menuesErzeugen();
-    void applyTheme();   // Light-/Darkmode-Palette + Stylesheet aus den Layout-Entwürfen
-    static bool systemIstDunkel();   // Windows-Systemtheme erkennen
-    void themeUmschalten();
-    void spracheUmschalten();
+    void buildUi();
+    void buildMenus();
+    void applyTheme();
+    static bool systemPrefersDarkMode();
+    void toggleTheme();
+    void switchLanguage();
     void login();
-    void datenordnerWaehlen();
-    void csvExportieren();
-    void sqliteExportieren();
-    void berichtExportieren();
-    void toggleVollbild();
+    void chooseDataFolder();
+    void runCsvExport();
+    void runSqliteExport();
+    void runSqliteImport();
+    void runReportExport();
+    void toggleFullscreen();
 
     DataStore *m_store;
     ProtocolLoader *m_loader;
@@ -41,5 +41,5 @@ private:
     QTranslator *m_translator = nullptr;
     bool m_dark = false;
     bool m_english = false;
-    int m_aktiverTab = 0;   // bleibt über Login/Sprachwechsel erhalten
+    int m_activeTab = 0;
 };

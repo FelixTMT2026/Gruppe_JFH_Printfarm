@@ -1,28 +1,30 @@
+// Tab 1 (Druckerliste): Suche/Filter/Sortierung, Kontextmenue, Rechte.
 #pragma once
-// Tab 1 "Druckerliste": Suche/Filter, Kontextmenü, Detail- und Bearbeitungsdialog.
 
 #include "datastore.h"
 #include "protocol.h"
 #include "tablemodels.h"
 #include <QWidget>
 
-class DruckerWidget : public QWidget {
+class PrinterWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit DruckerWidget(DataStore *store, ProtocolLoader *loader, QWidget *parent = nullptr);
-    DruckerModel *model() const { return m_model; }
+    explicit PrinterWidget(DataStore *store, ProtocolLoader *loader, QWidget *parent = nullptr);
+    PrinterModel *model() const { return m_model; }
+
+    static Printer applyRoleRestrictions(const Printer &original, const Printer &edited);
 signals:
-    void statusMeldung(const QString &text);
+    void statusMessage(const QString &text);
 private:
-    void oeffneDetail(const Drucker &d);
-    void oeffneEdit(const Drucker &d);
-    void oeffneSim(const Drucker &d);
+    void showDetails(const Printer &d);
+    void editMasterData(const Printer &d);
+    void openPidSimulation(const Printer &d);
     DataStore *m_store;
     ProtocolLoader *m_loader;
-    DruckerModel *m_model;
+    PrinterModel *m_model;
     class QTableView *m_view;
-    class QLineEdit *m_suche;
+    class QLineEdit *m_search;
     class QComboBox *m_statusFilter;
-    class QComboBox *m_kinematikFilter;
+    class QComboBox *m_kinematicsFilter;
     class QPushButton *m_resetBtn;
 };

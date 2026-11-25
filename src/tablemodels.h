@@ -1,57 +1,57 @@
+// Qt-Tabellenmodelle fuer Drucker, Auftraege, Materialien, Wartungen, Log.
 #pragma once
-// QAbstractTableModel-Implementierungen für die Listenansichten.
 
 #include "datatypes.h"
 #include "datastore.h"
 #include <QAbstractTableModel>
 
-class DruckerModel : public QAbstractTableModel {
+class PrinterModel : public QAbstractTableModel {
     Q_OBJECT
 public:
-    enum { ColId = 0, ColModell, ColStandort, ColBetriebsstunden, ColStatus, ColCount };
-    explicit DruckerModel(const DataStore *store, QObject *parent = nullptr);
+    enum { ColId = 0, ColModel, ColLocation, ColOperatingHours, ColStatus, ColCount };
+    explicit PrinterModel(const DataStore *store, QObject *parent = nullptr);
     int rowCount(const QModelIndex &p = {}) const override;
     int columnCount(const QModelIndex &p = {}) const override;
     QVariant data(const QModelIndex &i, int role) const override;
     QVariant headerData(int s, Qt::Orientation o, int role) const override;
     void sort(int column, Qt::SortOrder order) override;
-    const Drucker *druckerAt(int row) const;
-    void setFilter(const QString &text, const QString &statusFilter, const QString &kinematikFilter);
-    void resetFilter();
-    void refresh() { rebuild(); }   // nach (Neu-)Laden der Daten
-private:
-    void rebuild();
-    const DataStore *m_store;
-    QList<const Drucker*> m_rows;
-    QString m_text, m_status, m_kinematik;
-};
-
-class AuftragModel : public QAbstractTableModel {
-    Q_OBJECT
-public:
-    enum { ColId = 0, ColDrucker, ColBauteil, ColStart, ColDauer, ColErgebnis, ColFehler, ColCount };
-    explicit AuftragModel(const DataStore *store, QObject *parent = nullptr);
-    int rowCount(const QModelIndex &p = {}) const override;
-    int columnCount(const QModelIndex &p = {}) const override;
-    QVariant data(const QModelIndex &i, int role) const override;
-    QVariant headerData(int s, Qt::Orientation o, int role) const override;
-    void sort(int column, Qt::SortOrder order) override;
-    const Auftrag *auftragAt(int row) const;
-    void setFilter(const QString &text, const QString &ergebnisFilter); // text: id/drucker/bauteil
-    void setNurDrucker(const QString &druckerId);   // leer = alle
+    const Printer *printerAtRow(int row) const;
+    void setFilter(const QString &text, const QString &statusFilter, const QString &kinematicsFilter);
     void resetFilter();
     void refresh() { rebuild(); }
 private:
     void rebuild();
     const DataStore *m_store;
-    QList<const Auftrag*> m_rows;
-    QString m_text, m_ergebnis, m_druckerId;
+    QList<const Printer*> m_rows;
+    QString m_filterText, m_status, m_kinematics;
+};
+
+class JobModel : public QAbstractTableModel {
+    Q_OBJECT
+public:
+    enum { ColId = 0, ColPrinter, ColPart, ColStart, ColDuration, ColResult, ColError, ColCount };
+    explicit JobModel(const DataStore *store, QObject *parent = nullptr);
+    int rowCount(const QModelIndex &p = {}) const override;
+    int columnCount(const QModelIndex &p = {}) const override;
+    QVariant data(const QModelIndex &i, int role) const override;
+    QVariant headerData(int s, Qt::Orientation o, int role) const override;
+    void sort(int column, Qt::SortOrder order) override;
+    const Job *jobAtRow(int row) const;
+    void setFilter(const QString &text, const QString &resultFilter);
+    void setPrinterOnly(const QString &printerId);
+    void resetFilter();
+    void refresh() { rebuild(); }
+private:
+    void rebuild();
+    const DataStore *m_store;
+    QList<const Job*> m_rows;
+    QString m_filterText, m_resultLabel, m_printerId;
 };
 
 class MaterialModel : public QAbstractTableModel {
     Q_OBJECT
 public:
-    enum { ColId = 0, ColBez, ColDuese, ColBett, ColDichte, ColPreis, ColLuefter, ColWochenverbrauch, ColCount };
+    enum { ColId = 0, ColBez, ColNozzle, ColBed, ColDensity, ColPrice, ColFan, ColWeeklyConsumption, ColCount };
     explicit MaterialModel(const DataStore *store, QObject *parent = nullptr);
     int rowCount(const QModelIndex &p = {}) const override;
     int columnCount(const QModelIndex &p = {}) const override;
@@ -66,51 +66,38 @@ private:
     QList<const Material*> m_rows;
 };
 
-class ModellModel : public QAbstractTableModel {
+class MaintenanceModel : public QAbstractTableModel {
     Q_OBJECT
 public:
-    enum { ColId = 0, ColHersteller, ColBez, ColKinematik, ColBauraum, ColMaxDuese, ColMaxBett, ColCount };
-    explicit ModellModel(const DataStore *store, QObject *parent = nullptr);
+    enum { ColId = 0, ColPrinter, ColDate, ColArt, ColDuration, ColNote, ColCount };
+    explicit MaintenanceModel(const DataStore *store, QObject *parent = nullptr);
     int rowCount(const QModelIndex &p = {}) const override;
     int columnCount(const QModelIndex &p = {}) const override;
     QVariant data(const QModelIndex &i, int role) const override;
     QVariant headerData(int s, Qt::Orientation o, int role) const override;
-public slots:
-    void refresh() { beginResetModel(); endResetModel(); }
-private:
-    const DataStore *m_store;
-};
-
-class WartungModel : public QAbstractTableModel {
-    Q_OBJECT
-public:
-    enum { ColId = 0, ColDrucker, ColDatum, ColArt, ColDauer, ColBemerkung, ColCount };
-    explicit WartungModel(const DataStore *store, QObject *parent = nullptr);
-    int rowCount(const QModelIndex &p = {}) const override;
-    int columnCount(const QModelIndex &p = {}) const override;
-    QVariant data(const QModelIndex &i, int role) const override;
-    QVariant headerData(int s, Qt::Orientation o, int role) const override;
-    void setNurDrucker(const QString &druckerId);
+    void setPrinterOnly(const QString &printerId);
     void refresh() { rebuild(); }
 private:
     void rebuild();
     const DataStore *m_store;
-    QList<const Wartung*> m_rows;
-    QString m_druckerId;
+    QList<const Maintenance*> m_rows;
+    QString m_printerId;
 };
 
 class LogModel : public QAbstractTableModel {
     Q_OBJECT
 public:
-    enum { ColZeit = 0, ColKategorie, ColAuftrag, ColMeldung, ColCount };
+    enum { ColTime = 0, ColCategory, ColJob, ColMessage, ColCount };
     explicit LogModel(const DataStore *store, QObject *parent = nullptr);
     int rowCount(const QModelIndex &p = {}) const override;
     int columnCount(const QModelIndex &p = {}) const override;
     QVariant data(const QModelIndex &i, int role) const override;
     QVariant headerData(int s, Qt::Orientation o, int role) const override;
-    void setKategorieFilter(int kat);   // -1 = alle
+    void setCategoryFilter(int category);
     void refresh();
 private:
+    void rebuildIndex();
     const DataStore *m_store;
-    int m_katFilter = -1;
+    QList<int> m_index;
+    int m_categoryFilter = -1;
 };

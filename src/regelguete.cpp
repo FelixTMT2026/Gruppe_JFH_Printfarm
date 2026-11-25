@@ -1,78 +1,78 @@
+// Implementierung siehe regelguete.h.
+
 #include "regelguete.h"
 #include <QtMath>
 
-// Lineare Interpolation: Zeitpunkt, an dem die Kurve den Wert level erreicht.
-static double zeitpunktBeiWert(const QVector<double> &zeit, const QVector<double> &ist,
+static double timeAtLevel(const QVector<double> &times, const QVector<double> &ist,
                                double level, int startIdx)
 {
     for (int i = qMax(1, startIdx); i < ist.size(); ++i) {
         const double a = ist[i - 1], b = ist[i];
         if ((a - level) * (b - level) <= 0 && qAbs(b - a) > 1e-9) {
             const double f = (level - a) / (b - a);
-            return zeit[i - 1] + f * (zeit[i] - zeit[i - 1]);
+            return times[i - 1] + f * (times[i] - times[i - 1]);
         }
     }
     return -1.0;
 }
 
-double RegelgueteRechner::anstiegszeitS(const QVector<double> &zeit, const QVector<double> &ist,
-                                        double t0, double tsoll)
+double ControlQualityCalculator::riseTimeS(const QVector<double> &times, const QVector<double> &ist,
+                                        double t0, double targetC)
 {
-    if (zeit.size() < 2 || tsoll <= t0)
+    if (times.size() < 2 || targetC <= t0)
         return 0.0;
-    const double sprung = tsoll - t0;
-    const double t10 = zeitpunktBeiWert(zeit, ist, t0 + 0.10 * sprung, 0);
-    const double t90 = zeitpunktBeiWert(zeit, ist, t0 + 0.90 * sprung, 0);
+    const double sprung = targetC - t0;
+    const double t10 = timeAtLevel(times, ist, t0 + 0.10 * sprung, 0);
+    const double t90 = timeAtLevel(times, ist, t0 + 0.90 * sprung, 0);
     if (t10 < 0 || t90 < 0)
         return 0.0;
     return t90 - t10;
 }
 
-double RegelgueteRechner::ueberschwingenK(const QVector<double> &ist, double tsoll)
+double ControlQualityCalculator::overshootK(const QVector<double> &ist, double targetC)
 {
     if (ist.isEmpty())
         return 0.0;
     double tmax = ist.first();
     for (double v : ist)
         tmax = qMax(tmax, v);
-    return tmax - tsoll;
+    return tmax - targetC;
 }
 
-double RegelgueteRechner::ausregelzeitS(const QVector<double> &zeit, const QVector<double> &ist,
-                                        double tsoll, double bandK)
+double ControlQualityCalculator::settlingTimeS(const QVector<double> &times, const QVector<double> &ist,
+                                        double targetC, double bandK)
 {
-    if (zeit.isEmpty())
+    if (times.isEmpty())
         return -1.0;
-    // Ausregelzeit: Zeitpunkt, ab dem die Temperatur dauerhaft im Band bleibt.
-    // Rückwärts suchen: letzter Zeitpunkt außerhalb des Bandes.
+
     int letzterAusreisser = -1;
     for (int i = 0; i < ist.size(); ++i)
-        if (qAbs(ist[i] - tsoll) > bandK)
+        if (qAbs(ist[i] - targetC) > bandK)
             letzterAusreisser = i;
     if (letzterAusreisser < 0)
-        return zeit.first();           // nie außerhalb des Bandes
+        return times.first();
     if (letzterAusreisser == ist.size() - 1)
-        return -1.0;                    // nie dauerhaft im Band (nicht ausgeregelt)
-    return zeit[letzterAusreisser + 1];
+        return -1.0;
+    return times[letzterAusreisser + 1];
 }
 
-void RegelgueteRechner::regelabweichungDruck(const QVector<Messpunkt> &druck,
-                                             double tsoll, double &mittel, double &maxi)
+void ControlQualityCalculator::deviationDuringPrint(const QVector<Sample> &printPhase,
+                                             double targetC, double &mittel, double &maxi)
 {
     mittel = 0.0;
     maxi = 0.0;
     double sum = 0.0;
     qint64 n = 0;
-    bool wiederaufheizen = false;   // nach Pause bis |e| <= 3 K ausschließen
-    for (const auto &p : druck) {
-        const double e = tsoll - p.dueseIstC;
-        if (p.schicht == 0) {          // Pause: Messpunkt überspringen, Wiederaufheizen markieren
-            wiederaufheizen = true;
+    bool reheating = false;
+    for (const auto &p : printPhase) {
+        const double e = targetC - p.nozzleActualC;
+        if (p.layer == 0) {
+            reheating = true;
             continue;
         }
-        if (wiederaufheizen) {
+        if (reheating) {
             if (qAbs(e) <= 3.0)
-                wiederaufheizen = false;    // erst ab |e| <= 3 K wieder mitzählen
+                reheating = false;
             else
                 continue;
         }
@@ -84,35 +84,35 @@ void RegelgueteRechner::regelabweichungDruck(const QVector<Messpunkt> &druck,
         mittel = sum / n;
 }
 
-Regelguete RegelgueteRechner::werteAus(const QVector<Messpunkt> &aufheizen,
-                                       const QVector<Messpunkt> &druck,
-                                       double tsoll)
+ControlQuality ControlQualityCalculator::computeValues(const QVector<Sample> &heatUp,
+                                       const QVector<Sample> &printPhase,
+                                       double targetC)
 {
-    Regelguete r;
-    if (aufheizen.size() < 2)
+    ControlQuality r;
+    if (heatUp.size() < 2)
         return r;
-    QVector<double> zeit, ist;
-    zeit.reserve(aufheizen.size());
-    ist.reserve(aufheizen.size());
-    for (const auto &p : aufheizen) {
-        zeit.append(p.zeitS);
-        ist.append(p.dueseIstC);
+    QVector<double> times, ist;
+    times.reserve(heatUp.size());
+    ist.reserve(heatUp.size());
+    for (const auto &p : heatUp) {
+        times.append(p.timeS);
+        ist.append(p.nozzleActualC);
     }
     const double t0 = ist.first();
-    const double sprung = tsoll - t0;
+    const double sprung = targetC - t0;
     if (sprung <= 0) {
-        r.bemerkung = QStringLiteral("Solltemperatur nicht über Starttemperatur");
+        r.note = QStringLiteral("Solltemperatur nicht über Starttemperatur");
         return r;
     }
-    r.verfuegbar = true;
-    r.anstiegszeitS = anstiegszeitS(zeit, ist, t0, tsoll);
-    r.ueberschwingenK = ueberschwingenK(ist, tsoll);
-    r.ueberschwingenProzent = sprung > 0 ? 100.0 * r.ueberschwingenK / sprung : 0.0;
-    const double ta = ausregelzeitS(zeit, ist, tsoll, 2.0);
-    r.ausgeregelt = ta >= 0;
-    r.ausregelzeitS = ta;
-    if (!r.ausgeregelt)
-        r.bemerkung = QStringLiteral("Nicht ausgeregelt (nie dauerhaft im ±2-K-Band)");
-    regelabweichungDruck(druck, tsoll, r.mittlereAbweichungK, r.maximaleAbweichungK);
+    r.available = true;
+    r.riseTimeS = riseTimeS(times, ist, t0, targetC);
+    r.overshootK = overshootK(ist, targetC);
+    r.overshootPercent = sprung > 0 ? 100.0 * r.overshootK / sprung : 0.0;
+    const double ta = settlingTimeS(times, ist, targetC, 2.0);
+    r.settled = ta >= 0;
+    r.settlingTimeS = ta;
+    if (!r.settled)
+        r.note = QStringLiteral("Nicht ausgeregelt (nie dauerhaft im ±2-K-Band)");
+    deviationDuringPrint(printPhase, targetC, r.meanDeviationK, r.maxDeviationK);
     return r;
 }

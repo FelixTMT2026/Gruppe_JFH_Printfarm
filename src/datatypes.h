@@ -1,118 +1,108 @@
+// Zentrale Datenstrukturen (entspricht exakt den CSV-Spalten bzw. dem JSON-Format).
 #pragma once
-// Zentrale Datenstrukturen der PrintFarm-Anwendung.
-// Alle Strukturen bilden exakt die Spalten der globalen CSV-Dateien ab.
 
 #include <QString>
 #include <QDate>
 #include <QDateTime>
 #include <QVector>
 #include <QList>
-#include <QJsonObject>
 
-struct Modell {
-    QString modellId;
-    QString hersteller;
-    QString bezeichnung;
-    QString kinematik;          // kartesisch | corexy | delta
-    double bauraumXMm = 0, bauraumYMm = 0, bauraumZMm = 0;
-    double maxDueseTempC = 0, maxBettTempC = 0;
-    double heizleistungDueseW = 0, heizleistungBettW = 0;
+struct DeviceModel {
+    QString modelId;
+    QString manufacturer;
+    QString description;
+    QString kinematics;
+    double buildXMm = 0, buildYMm = 0, buildZMm = 0;
+    double maxNozzleTempC = 0, maxBedTempC = 0;
+    double nozzleHeaterW = 0, bedHeaterW = 0;
 };
 
 struct Material {
     QString materialId;
-    QString bezeichnung;
-    double dueseTempC = 0, bettTempC = 0;
-    double dichteGCm3 = 0;
-    double preisEurKg = 0;
-    double luefterProzent = 0;
+    QString description;
+    double nozzleTempC = 0, bedTempC = 0;
+    double densityGCm3 = 0;
+    double priceEurKg = 0;
+    double fanPercent = 0;
 };
 
-struct Drucker {
-    QString druckerId;
-    QString modellId;
-    QString standort;
-    QDate inbetriebnahme;
-    double betriebsstunden = 0;
-    double dueseMm = 0;
+struct Printer {
+    QString printerId;
+    QString modelId;
+    QString location;
+    QDate commissionedOn;
+    double operatingHours = 0;
+    double nozzleMm = 0;
     QString firmware;
     double pidKp = 0, pidKi = 0, pidKd = 0;
-    QString status;             // bereit | druckt | wartung | defekt
+    QString status;
 };
 
-struct Auftrag {
-    QString auftragId;
-    QString druckerId;
+struct Job {
+    QString jobId;
+    QString printerId;
     QString materialId;
-    QString bauteil;
-    QDateTime start;            // invalid bei geplanten Aufträgen
+    QString part;
+    QDateTime start;
     QDateTime ende;
-    double dauerSollMin = 0;
-    double filamentSollG = 0;
-    QString ergebnis;           // erfolgreich | abgebrochen | fehlgeschlagen | ausstehend
-    QString fehlercode;
-    QString bemerkung;
+    double plannedMinutes = 0;
+    double plannedFilamentG = 0;
+    QString jobResult;
+    QString errorCode;
+    QString note;
 };
 
-struct Wartung {
-    QString wartungId;
-    QString druckerId;
-    QDate datum;
-    QString art;
-    double dauerMin = 0;
-    QString bemerkung;
+struct Maintenance {
+    QString maintenanceId;
+    QString printerId;
+    QDate date;
+    QString kind;
+    double durationMin = 0;
+    QString note;
 };
 
-// Ein Messpunkt einer Druckprotokoll-Phase.
-struct Messpunkt {
-    double zeitS = 0;
-    double dueseIstC = 0;
-    double bettIstC = 0;
-    double dueseSollC = 0;      // nur Druckphase
-    double heizleistungProzent = 0;
-    double luefterProzent = 0;  // nur Druckphase
-    int schicht = 0;            // nur Druckphase; 0 = Pause
-    double extruderStromA = 0;  // nur Druckphase
+struct Sample {
+    double timeS = 0;
+    double nozzleActualC = 0;
+    double bedActualC = 0;
+    double nozzleTargetC = 0;
+    double heaterPercent = 0;
+    double fanPercent = 0;
+    int layer = 0;
+    double extruderCurrentA = 0;
 };
 
-struct Ereignis {
-    double zeitS = 0;
-    QString typ;                // druck_start | pause | fortsetzen | abbruch | druck_ende
-    QString text;
+struct Event {
+    double timeS = 0;
+    QString type;
 };
 
-// Vollständig geladenes Druckprotokoll eines Auftrags.
-struct Protokoll {
-    QString auftragId;
-    QString druckerId;
-    QString materialId;
-    double dueseSollC = 0, bettSollC = 0;
-    int schichtanzahl = 0;
-    double abtastungAufheizenS = 1, abtastungDruckS = 30;
-    QVector<Messpunkt> aufheizen;
-    QVector<Messpunkt> druck;
-    QVector<Ereignis> ereignisse;
+struct PrintLog {
+    QString jobId;
+    QString printerId;
+    double nozzleTargetC = 0, bedTargetC = 0;
+    QVector<Sample> heatUp;
+    QVector<Sample> printPhase;
+    QVector<Event> events;
     bool valid = false;
-    QString fehler;             // falls JSON defekt
+    QString error;
 };
 
-// Ergebnis der fachlichen Regelgüte-Auswertung (Aufheizphase + Druckphase).
-struct Regelguete {
-    bool verfuegbar = false;
-    double anstiegszeitS = 0;        // 10 % -> 90 % der Sprunghöhe
-    double ueberschwingenK = 0;      // Tmax - Tsoll
-    double ueberschwingenProzent = 0;
-    double ausregelzeitS = 0;         // dauerhaft im ±2-K-Band; -1 = nicht ausgeregelt
-    bool ausgeregelt = false;
-    double mittlereAbweichungK = 0;  // Druckphase ohne Pausen/Wiederaufheizen
-    double maximaleAbweichungK = 0;
-    QString bemerkung;
+struct ControlQuality {
+    bool available = false;
+    double riseTimeS = 0;
+    double overshootK = 0;
+    double overshootPercent = 0;
+    double settlingTimeS = 0;
+    bool settled = false;
+    double meanDeviationK = 0;
+    double maxDeviationK = 0;
+    QString note;
 };
 
-// Ein Eintrag im zentralen Fehlerlog (Tab 4).
-struct LogEintrag {
-    enum Kategorie { Import, Validierung, Datei, Protokoll, System } kategorie;
-    QDateTime zeitpunkt;
-    QString auftragId;      // optional, leer = global
-    QString meldung;
+struct LogEntry {
+    enum Category { Import, Validation, File, PrintLog, System } category;
+    QDateTime timestamp;
+    QString jobId;
+    QString message;
 };

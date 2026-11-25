@@ -1,5 +1,4 @@
-// QA-GUI-Test: steuert das Hauptfenster headless (offscreen) mit den echten
-// Projektdaten an und prüft die Kernabläufe der Bedienoberfläche.
+
 
 #include <QtTest>
 #include <QApplication>
@@ -18,50 +17,62 @@
 #include "ganttwidget.h"
 #include "analyse.h"
 #include "auth.h"
+#include "druckerwidget.h"
 #include <QLabel>
 #include <QChart>
 #include <QChartView>
 #include <QCategoryAxis>
 #include <QPushButton>
+#include <QGroupBox>
+#include <QAbstractButton>
 #include <QValueAxis>
 #include <QLocale>
 #include <QStyledItemDelegate>
 #include <QLineSeries>
 #include <QCheckBox>
 #include <QDateTimeAxis>
+#include <QListWidget>
 
 class TestGui : public QObject {
     Q_OBJECT
 private slots:
     void initTestCase();
-    void vierTabsInReihenfolge();
-    void datenSofortSichtbar();
-    void filterFunktioniert();
-    void sortierungFunktioniert();
-    void protokollUndRegelgueteEchteDaten();
-    void themeUndSpracheUmschaltbar();
-    void detailDialogOeffnetSich();
-    // --- QA-Runde 2 ---
-    void spracheWechseltTabTexte();
-    void materialTabStatistikGefuellt();
-    void materialListeSortierbar();      // Klick auf Spaltentitel sortiert auf/absteigend
-    void fehlerlogHatEintraege();
-    void teileInitialSortiertUndAusgewaehlt();   // vor dem Filter-Test, da der die Sortierung zurücksetzt
-    void teileFilterAusstehend();
-    void teileSplitterVerschiebbar();   // Plot/Jobliste-Grenze per QSplitter verstellbar
-    void vollbildPerFTaste();           // "f" ausserhalb von Textfeldern schaltet Vollbild um
-    void ganttLaesstSichZeichnen();
-    void themeFarbenBeiderModi();
-    void tabBleibtNachUiNeuaufbauErhalten();
-    void sortierungMitDuplikatenCrashfrei();
-    void protokollOhneAnmeldungSichtbar();
-    void belegungsplanNurFuerAdmin();
-    void dezimalpunktIstPunkt();
-    void spracheUmschaltungKomplett();
-    void plotLegendeUebersetzt();
-    void singleClickAktualisiertProtokoll();
-    void adaptiveZeitachseSkaliert();
-    void adaptivToggleAchse();
+    void fourTabsInOrder();
+    void dataVisibleImmediately();
+    void filterWorks();
+    void sortingWorks();
+    void protocolAndQualityRealData();
+    void themeAndLanguageSwitchable();
+    void detailDialogOpens();
+
+    void languageSwitchesTabTexts();
+    void materialTabStatsFilled();
+    void materialListSortable();
+    void errorLogHasEntries();
+    void partsInitiallySortedAndSelected();
+    void partsFilterPending();
+    void partsSplitterMovable();
+    void fullscreenViaFKey();
+    void ganttRenders();
+    void themeColorsBothModes();
+    void tabSurvivesUiRebuild();
+    void sortingWithDuplicatesCrashFree();
+    void protocolVisibleWithoutLogin();
+    void scheduleAdminOnly();
+    void decimalPointIsDot();
+    void languageSwitchComplete();
+    void enModeNoGermanFallbacks();
+    void plotLegendTranslated();
+    void singleClickUpdatesProtocol();
+    void adaptiveTimeScaleTested();
+    void adaptiveToggleAxis();
+
+    void pidDialogRankingAndFit();
+    void maintenanceTableInDetailDialog();
+    void sqliteImportMenuPresent();
+    void asyncLoadNonBlocking();
+
+    void rightsSeparationEnforced();
 private:
     MainWindow *w = nullptr;
     QString dataDir;
@@ -69,17 +80,17 @@ private:
 
 void TestGui::initTestCase()
 {
-    // echte Daten aus dem Repo verwenden
+
     dataDir = QCoreApplication::applicationDirPath() + "/../QT-Projekt_info/PrintFarm_Daten/PrintFarm_Daten";
     if (!QFileInfo::exists(dataDir + "/drucker.csv"))
         dataDir = QStringLiteral("QT-Projekt_info/PrintFarm_Daten/PrintFarm_Daten");
     QVERIFY2(QFileInfo::exists(dataDir + "/drucker.csv"), "Testdaten nicht gefunden");
-    QLocale::setDefault(QLocale::c());   // wie in main.cpp der App gesetzt
+    QLocale::setDefault(QLocale::c());
     w = new MainWindow();
-    QVERIFY(w->ladeDatenordner(QDir(dataDir).absolutePath()));
+    QVERIFY(w->loadDataFolder(QDir(dataDir).absolutePath()));
 }
 
-void TestGui::vierTabsInReihenfolge()
+void TestGui::fourTabsInOrder()
 {
     auto *tabs = w->findChild<QTabWidget*>();
     QVERIFY(tabs);
@@ -88,24 +99,24 @@ void TestGui::vierTabsInReihenfolge()
     QCOMPARE(tabs->tabText(1), QString::fromUtf8("Gedruckte Teile"));
     QCOMPARE(tabs->tabText(2), QString::fromUtf8("Material"));
     QCOMPARE(tabs->tabText(3), QString::fromUtf8("Fehlerlog"));
-    QCOMPARE(tabs->tabPosition(), QTabWidget::North);  // Tabs oben
+    QCOMPARE(tabs->tabPosition(), QTabWidget::North);
 }
 
-void TestGui::datenSofortSichtbar()
+void TestGui::dataVisibleImmediately()
 {
-    // ohne Filterumschaltung müssen sofort Daten in der Druckerliste stehen
+
     auto *tabs = w->findChild<QTabWidget*>();
     auto *view = tabs->widget(0)->findChild<QTableView*>();
     QVERIFY(view);
     auto *model = view->model();
-    QCOMPARE(model->rowCount(), 80);   // alle 80 Drucker sofort sichtbar
-    // Zebra-Muster: alle Listen in allen Tabs haben wechselnde Zeilenfarben aktiv
+    QCOMPARE(model->rowCount(), 80);
+
     for (int t = 0; t < tabs->count(); ++t)
         for (auto *v : tabs->widget(t)->findChildren<QTableView*>())
             QVERIFY2(v->alternatingRowColors(), "alternatingRowColors fehlt in einem Tab");
 }
 
-void TestGui::filterFunktioniert()
+void TestGui::filterWorks()
 {
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab0 = tabs->widget(0);
@@ -113,25 +124,24 @@ void TestGui::filterFunktioniert()
     auto *view = tab0->findChild<QTableView*>();
     auto *model = view->model();
     QVERIFY(suche);
-    const int vorher = model->rowCount();
-    QCOMPARE(vorher, 80);
+    const int before = model->rowCount();
+    QCOMPARE(before, 80);
     suche->setText(QStringLiteral("D001"));
-    QCOMPARE(model->rowCount(), 1);    // genau ein Treffer
+    QCOMPARE(model->rowCount(), 1);
     suche->setText(QString());
-    QCOMPARE(model->rowCount(), 80);   // zurücksetzen zeigt wieder alle
-    // Status-Filter: Combo über den sichtbaren Text finden und „wartung“ wählen
-    // (findText statt findData: prueft den Eintrag, den der Benutzer anklickt)
+    QCOMPARE(model->rowCount(), 80);
+
     QComboBox *statusCombo = nullptr;
     for (auto *c : tab0->findChildren<QComboBox*>()) {
         if (c->findText(QStringLiteral("wartung")) >= 0) statusCombo = c;
     }
     QVERIFY(statusCombo);
     statusCombo->setCurrentIndex(statusCombo->findText(QStringLiteral("wartung")));
-    QVERIFY(model->rowCount() < 80);   // 4 Wartungen in den Daten
+    QVERIFY(model->rowCount() < 80);
     QCOMPARE(model->rowCount(), 4);
     statusCombo->setCurrentIndex(0);
     QCOMPARE(model->rowCount(), 80);
-    // Reset-Button: Suche + Dropdowns zuruecksetzen -> wieder alle 80 Zeilen
+
     suche->setText(QStringLiteral("D001"));
     QCOMPARE(model->rowCount(), 1);
     auto *resetBtn = tab0->findChild<QPushButton*>();
@@ -142,12 +152,12 @@ void TestGui::filterFunktioniert()
     QCOMPARE(model->rowCount(), 80);
 }
 
-void TestGui::sortierungFunktioniert()
+void TestGui::sortingWorks()
 {
     auto *tabs = w->findChild<QTabWidget*>();
     auto *view = tabs->widget(0)->findChild<QTableView*>();
     auto *model = view->model();
-    // nach Betriebsstunden sortieren (Spalte 3)
+
     model->sort(3, Qt::DescendingOrder);
     const double first = model->data(model->index(0, 3)).toDouble();
     const double last = model->data(model->index(model->rowCount() - 1, 3)).toDouble();
@@ -155,37 +165,37 @@ void TestGui::sortierungFunktioniert()
     model->sort(0, Qt::AscendingOrder);
 }
 
-void TestGui::protokollUndRegelgueteEchteDaten()
+void TestGui::protocolAndQualityRealData()
 {
-    // ein echtes Protokoll aus dem ersten Batch laden und Regelgüte rechnen
+
     ProtocolLoader loader;
-    QVERIFY(loader.loadIndex(QDir(dataDir).absolutePath()) > 1600);   // Master-Index: 1615 Einträge
-    const Protokoll p = loader.load(QStringLiteral("J00001"));
+    QVERIFY(loader.loadIndex(QDir(dataDir).absolutePath()) > 1600);
+    const PrintLog p = loader.load(QStringLiteral("J00001"));
     QVERIFY(p.valid);
-    QVERIFY(p.aufheizen.size() > 100);
-    QVERIFY(p.druck.size() > 100);
-    const Regelguete rg = RegelgueteRechner::werteAus(p.aufheizen, p.druck, p.dueseSollC);
-    QVERIFY(rg.verfuegbar);
-    QVERIFY(rg.anstiegszeitS > 0);
-    QVERIFY(rg.ausgeregelt);
-    QVERIFY(rg.ausregelzeitS > 0 && rg.ausregelzeitS < 300);
-    // Chart-Widget mit echten Daten zeichnen (offscreen)
+    QVERIFY(p.heatUp.size() > 100);
+    QVERIFY(p.printPhase.size() > 100);
+    const ControlQuality rg = ControlQualityCalculator::computeValues(p.heatUp, p.printPhase, p.nozzleTargetC);
+    QVERIFY(rg.available);
+    QVERIFY(rg.riseTimeS > 0);
+    QVERIFY(rg.settled);
+    QVERIFY(rg.settlingTimeS > 0 && rg.settlingTimeS < 300);
+
     PlotWidget plot;
-    plot.zeigeProtokoll(p);
+    plot.showProtocol(p);
     plot.resize(600, 300);
     plot.show();
     QVERIFY(true);
 }
 
-void TestGui::themeUndSpracheUmschaltbar()
+void TestGui::themeAndLanguageSwitchable()
 {
-    // Darkmode an/aus über das Menü (applyTheme darf nicht crashen)
-    QVERIFY(QTest::qWaitForWindowExposed(w) || true);   // offscreen: exposed egal
+
+    QVERIFY(QTest::qWaitForWindowExposed(w) || true);
     auto menubar = w->menuBar();
     QVERIFY(menubar);
     QList<QAction*> actions = menubar->actions();
     QVERIFY(actions.size() >= 3);
-    // Theme-Aktion finden und zweimal toggeln
+
     QAction *theme = nullptr;
     for (auto *m : menubar->actions()) {
         for (auto *a : m->menu()->actions())
@@ -193,33 +203,31 @@ void TestGui::themeUndSpracheUmschaltbar()
                 theme = a;
     }
     QVERIFY(theme);
-    theme->trigger();   // dark an
-    theme->trigger();   // dark aus
+    theme->trigger();
+    theme->trigger();
     QVERIFY(true);
 }
 
-void TestGui::detailDialogOeffnetSich()
+void TestGui::detailDialogOpens()
 {
-    // Drucker-Detaildialog instanziieren (Doppelklick-Simulation auf Zeile 0)
+
     auto *tabs = w->findChild<QTabWidget*>();
     auto *view = tabs->widget(0)->findChild<QTableView*>();
     auto *model = view->model();
-    const auto *d = static_cast<DruckerModel*>(model)->druckerAt(0);
+    const auto *d = static_cast<PrinterModel*>(model)->printerAtRow(0);
     QVERIFY(d);
-    DruckerDetailDialog dlg(*d, w->store(), w->loader(), w);
+    PrinterDetailDialog dlg(*d, w->store(), w->loader(), w);
     dlg.show();
     QTest::qWait(50);
-    QVERIFY(dlg.isVisible() || true);   // offscreen: show() genügt als Smoke-Test
+    QVERIFY(dlg.isVisible() || true);
 }
 
-// ---------------- QA-Runde 2: GUI ----------------------------------------
-
-void TestGui::spracheWechseltTabTexte()
+void TestGui::languageSwitchesTabTexts()
 {
     auto *tabs = w->findChild<QTabWidget*>();
     QVERIFY(tabs);
     QCOMPARE(tabs->tabText(0), QString::fromUtf8("Druckerliste"));
-    // Sprache auf Englisch umschalten (Menü Ansicht -> letzter Eintrag)
+
     QAction *lang = nullptr;
     for (auto *m : w->menuBar()->actions()) {
         for (auto *a : m->menu()->actions())
@@ -228,10 +236,10 @@ void TestGui::spracheWechseltTabTexte()
     }
     QVERIFY(lang);
     lang->trigger();
-    tabs = w->findChild<QTabWidget*>();   // UI wurde neu aufgebaut
+    tabs = w->findChild<QTabWidget*>();
     QVERIFY(tabs);
     QCOMPARE(tabs->tabText(0), QStringLiteral("Printers"));
-    // zurück auf Deutsch
+
     for (auto *m : w->menuBar()->actions()) {
         for (auto *a : m->menu()->actions())
             if (a->text().contains(QString::fromUtf8("Deutsch")))
@@ -243,7 +251,7 @@ void TestGui::spracheWechseltTabTexte()
     QCOMPARE(tabs->tabText(0), QString::fromUtf8("Druckerliste"));
 }
 
-void TestGui::materialTabStatistikGefuellt()
+void TestGui::materialTabStatsFilled()
 {
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab2 = tabs->widget(2);
@@ -253,77 +261,77 @@ void TestGui::materialTabStatistikGefuellt()
         if (l->text().contains(QString::fromUtf8("Verbrauchsstatistik")) && l->text().length() > 50)
             statsGefuellt = true;
     QVERIFY(statsGefuellt);
-    // genau eine Liste: Materialien (Druckermodelle und Wartungen entfernt)
+
     const auto views = tab2->findChildren<QTableView*>();
     QCOMPARE(views.size(), 1);
-    // Material-Tabelle gefüllt (10 Materialien, 8 Spalten inkl. Ø Wochenverbrauch)
-    bool materialTabelleGefuellt = false;
+
+    bool materialTableFilled = false;
     for (auto *v : views)
         if (v->model()->columnCount() == 8 && v->model()->rowCount() == 10)
-            materialTabelleGefuellt = true;
-    QVERIFY(materialTabelleGefuellt);
-    // Verbrauchs-Plot als Kurve mit Punkten vorhanden und gefuellt (ein Punkt pro Tag)
+            materialTableFilled = true;
+    QVERIFY(materialTableFilled);
+
     auto *chartView = tab2->findChild<QChartView*>();
     QVERIFY(chartView);
     QVERIFY(!chartView->chart()->series().isEmpty());
     auto *lineSeries = qobject_cast<QLineSeries*>(chartView->chart()->series().first());
     QVERIFY(lineSeries);
-    QVERIFY(lineSeries->pointsVisible());   // Punkte bleiben auch beim Komprimieren sichtbar
-    QVERIFY(lineSeries->count() > 50);      // 6h-Buckets (28 Tage * 4 = 112), nicht pro Druck (1577)
-    // Y-Achse muss an die Daten angepasst sein (sonst Balkenhoehe 0)
+    QVERIFY(lineSeries->pointsVisible());
+    QVERIFY(lineSeries->count() > 50);
+
     auto *axisY = qobject_cast<QValueAxis*>(chartView->chart()->axes(Qt::Vertical).first());
     QVERIFY(axisY);
     QVERIFY(axisY->max() > 0);
-    // Tag-Achse: Datumsachse mit Format "d" (nur Tag), Tick-Anzahl an Plotbreite angepasst
+
     w->show();
     w->resize(1200, 900);
-    tabs->setCurrentIndex(2);   // Tab sichtbar, damit der Plot ein echtes Layout bekommt
+    tabs->setCurrentIndex(2);
     QTest::qWait(150);
     auto *axisX = qobject_cast<QDateTimeAxis*>(chartView->chart()->axes(Qt::Horizontal).first());
     QVERIFY(axisX);
-    QCOMPARE(axisX->format(), QStringLiteral("d"));   // nur Tageszahl, kein Monat
+    QCOMPARE(axisX->format(), QStringLiteral("d"));
     QVERIFY(axisX->tickCount() > 1);
     QVERIFY(axisX->labelsFont().pointSize() <= 10);
-    // Plot hoch genug, sonst kollabieren die Achsenlabels zu "..."
+
     QVERIFY(chartView->minimumHeight() >= 240);
 }
 
-void TestGui::materialListeSortierbar()
+void TestGui::materialListSortable()
 {
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab2 = tabs->widget(2);
     auto *view = tab2->findChild<QTableView*>();
     QVERIFY(view);
-    QVERIFY(view->isSortingEnabled());   // Header-Klick sortiert
+    QVERIFY(view->isSortingEnabled());
     auto *model = view->model();
     QVERIFY(model->rowCount() == 10);
-    // Spalte 1 (Bezeichnung) aufsteigend sortieren
+
     model->sort(1, Qt::AscendingOrder);
     const QString first = model->data(model->index(0, 1)).toString();
     const QString last = model->data(model->index(model->rowCount() - 1, 1)).toString();
     QVERIFY(first <= last);
-    // absteigend -> umgekehrt
+
     model->sort(1, Qt::DescendingOrder);
     QCOMPARE(model->data(model->index(0, 1)).toString(), last);
     QCOMPARE(model->data(model->index(model->rowCount() - 1, 1)).toString(), first);
-    // numerische Spalte (Ø Wochenverbrauch, Spalte 7) absteigend: groesster Wert zuerst
+
     model->sort(7, Qt::DescendingOrder);
     const double top = model->data(model->index(0, 7)).toDouble();
     const double bottom = model->data(model->index(model->rowCount() - 1, 7)).toDouble();
     QVERIFY(top >= bottom);
-    model->sort(0, Qt::AscendingOrder);   // zurueck auf ID
+    model->sort(0, Qt::AscendingOrder);
 }
 
-void TestGui::fehlerlogHatEintraege()
+void TestGui::errorLogHasEntries()
 {
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab3 = tabs->widget(3);
     auto *view = tab3->findChild<QTableView*>();
     QVERIFY(view);
-    QVERIFY(view->model()->rowCount() > 0);   // mind. System-/Validierungs-Einträge
+    QVERIFY(view->model()->rowCount() > 0);
 }
 
-void TestGui::teileFilterAusstehend()
+void TestGui::partsFilterPending()
 {
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab1 = tabs->widget(1);
@@ -331,66 +339,66 @@ void TestGui::teileFilterAusstehend()
     QVERIFY(view);
     auto *model = view->model();
     const int gesamt = model->rowCount();
-    QVERIFY(gesamt > 1500);   // echte Daten: 1633 Aufträge
-    // Ergebnis-Filter "ausstehend" wählen (17 in den echten Daten)
-    QComboBox *erg = nullptr;
+    QVERIFY(gesamt > 1500);
+
+    QComboBox *res = nullptr;
     for (auto *c : tab1->findChildren<QComboBox*>())
-        if (c->findData(QStringLiteral("ausstehend")) >= 0) erg = c;
-    QVERIFY(erg);
-    erg->setCurrentIndex(erg->findData(QStringLiteral("ausstehend")));
+        if (c->findData(QStringLiteral("ausstehend")) >= 0) res = c;
+    QVERIFY(res);
+    res->setCurrentIndex(res->findData(QStringLiteral("ausstehend")));
     QCOMPARE(model->rowCount(), 17);
     QVERIFY(model->rowCount() < gesamt);
-    erg->setCurrentIndex(0);
+    res->setCurrentIndex(0);
     QCOMPARE(model->rowCount(), gesamt);
 }
 
-void TestGui::teileSplitterVerschiebbar()
+void TestGui::partsSplitterMovable()
 {
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab1 = tabs->widget(1);
-    // vertikaler Splitter zwischen Plot-Bereich und Jobliste vorhanden
+
     QSplitter *splitter = nullptr;
     for (auto *s : tab1->findChildren<QSplitter*>())
         if (s->orientation() == Qt::Vertical) splitter = s;
     QVERIFY(splitter);
-    QCOMPARE(splitter->count(), 2);   // oben Plot-Box, unten Jobliste
-    // Grenze verschiebbar: neue Groessen annehmen und aendern sich
+    QCOMPARE(splitter->count(), 2);
+
     w->show();
     w->resize(1000, 800);
-    tabs->setCurrentIndex(1);   // Tab aktivieren, damit er eine echte Groesse bekommt
+    tabs->setCurrentIndex(1);
     QTest::qWait(50);
     const int gesamt = splitter->height();
     QVERIFY(gesamt > 100);
-    const QList<int> vorher = splitter->sizes();
-    // Grenze nach unten verschieben: unterer Teil (Jobliste) waechst, oberer schrumpft
+    const QList<int> before = splitter->sizes();
+
     splitter->setSizes({gesamt / 4, gesamt - gesamt / 4});
     const QList<int> nachher = splitter->sizes();
-    QVERIFY(nachher.at(1) > vorher.at(1));    // Jobliste groesser geworden
-    QVERIFY(nachher.at(0) < vorher.at(0));    // Plot-Bereich kleiner geworden
+    QVERIFY(nachher.at(1) > before.at(1));
+    QVERIFY(nachher.at(0) < before.at(0));
     QVERIFY(!splitter->childrenCollapsible());
 }
 
-void TestGui::vollbildPerFTaste()
+void TestGui::fullscreenViaFKey()
 {
     QVERIFY(!w->isMaximized());
-    QVERIFY(!w->isFullScreen());   // windowed fullscreen: nie rahmenlos
+    QVERIFY(!w->isFullScreen());
     auto *tabs = w->findChild<QTabWidget*>();
     auto *suche = tabs->widget(0)->findChild<QLineEdit*>();
     QVERIFY(suche);
-    // im Suchfeld tippt "f" nur Text, kein Vollbild
+
     suche->setFocus();
     QTest::keyClick(suche, Qt::Key_F);
     QVERIFY(!w->isMaximized());
     QCOMPARE(suche->text(), QStringLiteral("f"));
     suche->clear();
-    // ausserhalb des Suchfelds: F toggelt windowed-Vollbild (maximiert, Titelleiste bleibt)
+
     w->setFocus();
     QTest::keyClick(w, Qt::Key_F);
     QVERIFY(w->isMaximized());
     QVERIFY(!w->isFullScreen());
     QTest::keyClick(w, Qt::Key_F);
     QVERIFY(!w->isMaximized());
-    // Menue-Eintrag vorhanden und checkable
+
     QAction *fs = nullptr;
     for (auto *m : w->menuBar()->actions())
         for (auto *a : m->menu()->actions())
@@ -404,25 +412,25 @@ void TestGui::vollbildPerFTaste()
     QVERIFY(!w->isMaximized());
 }
 
-void TestGui::ganttLaesstSichZeichnen()
+void TestGui::ganttRenders()
 {
     GanttWidget g;
-    QList<Planung::Zuweisung> z = {
+    QList<Planning::Assignment> z = {
         {"J1", "D001", QDateTime(QDate(2026,1,5), QTime(8,0)), QDateTime(QDate(2026,1,5), QTime(10,0))},
         {"J2", "D001", QDateTime(QDate(2026,1,5), QTime(10,0)), QDateTime(QDate(2026,1,5), QTime(11,0))},
         {"J3", "D002", QDateTime(QDate(2026,1,5), QTime(8,0)), QDateTime(QDate(2026,1,5), QTime(9,30))},
     };
-    g.setPlanung(z, {"D001", "D002"});
+    g.setSchedule(z, {"D001", "D002"});
     g.resize(600, 200);
     g.show();
     QTest::qWait(30);
-    g.leeren();
-    QVERIFY(true);   // kein Crash beim Zeichnen
+    g.clear();
+    QVERIFY(true);
 }
 
-void TestGui::themeFarbenBeiderModi()
+void TestGui::themeColorsBothModes()
 {
-    // Darkmode einschalten: Stylesheet muss die dunkle Palette enthalten
+
     QAction *theme = nullptr;
     for (auto *m : w->menuBar()->actions())
         for (auto *a : m->menu()->actions())
@@ -432,29 +440,28 @@ void TestGui::themeFarbenBeiderModi()
     if (!theme->isChecked()) theme->trigger();
     QVERIFY(theme->isChecked());
     QString sheet = qApp->styleSheet();
-    QVERIFY(sheet.contains(QStringLiteral("#202B39")));   // dunkler Hintergrund
-    QVERIFY(sheet.contains(QStringLiteral("#4A7DFF")));   // dunkler Akzent
-    QVERIFY(sheet.contains(QStringLiteral("#E6ECF3")));   // heller Text
-    QVERIFY(sheet.contains(QStringLiteral("QComboBox QAbstractItemView")));  // Dropdown gestylt
-    QVERIFY(sheet.contains(QStringLiteral("QScrollBar::handle")));           // Scrollbar gestylt
-    // alle PlotWidgets folgen dem dunklen Theme
+    QVERIFY(sheet.contains(QStringLiteral("#202B39")));
+    QVERIFY(sheet.contains(QStringLiteral("#4A7DFF")));
+    QVERIFY(sheet.contains(QStringLiteral("#E6ECF3")));
+    QVERIFY(sheet.contains(QStringLiteral("QComboBox QAbstractItemView")));
+    QVERIFY(sheet.contains(QStringLiteral("QScrollBar::handle")));
+
     for (auto *p : w->findChildren<PlotWidget*>())
         QCOMPARE(p->chart()->theme(), QChart::ChartThemeDark);
 
-    // Lightmode: helle Palette
     theme->trigger();
     QVERIFY(!theme->isChecked());
     sheet = qApp->styleSheet();
-    QVERIFY(sheet.contains(QStringLiteral("#D9DFE7")));   // heller Hintergrund
-    QVERIFY(sheet.contains(QStringLiteral("#001065")));   // Akzent dunkelblau
-    QVERIFY(sheet.contains(QStringLiteral("#1C2733")));   // dunkler Text
+    QVERIFY(sheet.contains(QStringLiteral("#D9DFE7")));
+    QVERIFY(sheet.contains(QStringLiteral("#001065")));
+    QVERIFY(sheet.contains(QStringLiteral("#1C2733")));
     for (auto *p : w->findChildren<PlotWidget*>())
         QCOMPARE(p->chart()->theme(), QChart::ChartThemeLight);
 }
 
-void TestGui::tabBleibtNachUiNeuaufbauErhalten()
+void TestGui::tabSurvivesUiRebuild()
 {
-    // Tab 3 (Fehlerlog) aktivieren, dann UI neu aufbauen (Sprachwechsel baut um)
+
     auto *tabs = w->findChild<QTabWidget*>();
     QVERIFY(tabs);
     tabs->setCurrentIndex(3);
@@ -465,34 +472,32 @@ void TestGui::tabBleibtNachUiNeuaufbauErhalten()
             if (a->text().contains(QStringLiteral("English")) || a->text().contains(QString::fromUtf8("Deutsch")))
                 lang = a;
     QVERIFY(lang);
-    lang->trigger();   // baut UI neu auf (wie nach Login)
+    lang->trigger();
     tabs = w->findChild<QTabWidget*>();
     QVERIFY(tabs);
-    QCOMPARE(tabs->currentIndex(), 3);   // gleicher Tab wie vorher
+    QCOMPARE(tabs->currentIndex(), 3);
     tabs->setCurrentIndex(0);
-    // sauber auf Deutsch zurücklassen
+
     if (w->findChild<QTabWidget*>() && w->findChild<QTabWidget*>()->tabText(0) != QString::fromUtf8("Druckerliste"))
         w->menuBar()->actions().at(1)->menu()->actions().last()->trigger();
 }
 
-void TestGui::sortierungMitDuplikatenCrashfrei()
+void TestGui::sortingWithDuplicatesCrashFree()
 {
-    // Regression: Sortieren nach Status (74x "bereit" = Duplikate) darf nicht
-    // crashen, weder auf- noch absteigend; danach müssen die Werte sortiert sein.
+
     auto *tabs = w->findChild<QTabWidget*>();
     auto *view = tabs->widget(0)->findChild<QTableView*>();
-    auto *model = static_cast<DruckerModel*>(view->model());
-    model->sort(4, Qt::AscendingOrder);    // Status aufsteigend
+    auto *model = static_cast<PrinterModel*>(view->model());
+    model->sort(4, Qt::AscendingOrder);
     for (int i = 1; i < model->rowCount(); ++i)
         QVERIFY(model->data(model->index(i - 1, 4), Qt::DisplayRole).toString() <= model->data(model->index(i, 4), Qt::DisplayRole).toString());
-    model->sort(4, Qt::DescendingOrder);   // umkehren -> früher Crash
+    model->sort(4, Qt::DescendingOrder);
     for (int i = 1; i < model->rowCount(); ++i)
         QVERIFY(model->data(model->index(i - 1, 4), Qt::DisplayRole).toString() >= model->data(model->index(i, 4), Qt::DisplayRole).toString());
     model->sort(0, Qt::AscendingOrder);
 
-    // ebenso Auftragsliste nach Ergebnis (viele Duplikate) in beide Richtungen
     auto *view1 = tabs->widget(1)->findChild<QTableView*>();
-    auto *amodel = static_cast<AuftragModel*>(view1->model());
+    auto *amodel = static_cast<JobModel*>(view1->model());
     amodel->sort(5, Qt::AscendingOrder);
     amodel->sort(5, Qt::DescendingOrder);
     for (int i = 1; i < amodel->rowCount(); ++i)
@@ -500,60 +505,80 @@ void TestGui::sortierungMitDuplikatenCrashfrei()
     amodel->sort(0, Qt::AscendingOrder);
 }
 
-void TestGui::teileInitialSortiertUndAusgewaehlt()
+void TestGui::partsInitiallySortedAndSelected()
 {
-    // Tab "Gedruckte Teile": default nach Start absteigend sortiert
+
     auto *tabs = w->findChild<QTabWidget*>();
     auto *view = tabs->widget(1)->findChild<QTableView*>();
-    auto *model = static_cast<AuftragModel*>(view->model());
+    auto *model = static_cast<JobModel*>(view->model());
     QVERIFY(model->rowCount() > 1500);
-    const QString first = model->data(model->index(0, AuftragModel::ColStart), Qt::DisplayRole).toString();
-    const QString last = model->data(model->index(model->rowCount() - 1, AuftragModel::ColStart), Qt::DisplayRole).toString();
-    QVERIFY(first >= last);   // absteigend nach Zeit
-    // ein fertiger Auftrag ist ausgewählt (Zeile selektiert)
+    const QString first = model->data(model->index(0, JobModel::ColStart), Qt::DisplayRole).toString();
+    const QString last = model->data(model->index(model->rowCount() - 1, JobModel::ColStart), Qt::DisplayRole).toString();
+    QVERIFY(first >= last);
+
     QVERIFY(view->currentIndex().isValid());
-    const auto *a = model->auftragAt(view->currentIndex().row());
+    const auto *a = model->jobAtRow(view->currentIndex().row());
     QVERIFY(a);
-    QVERIFY(a->ergebnis != QLatin1String("ausstehend"));
-    QVERIFY(a->ende.isValid());   // letzter beendeter Druck
+    QVERIFY(a->jobResult != QLatin1String("ausstehend"));
+    QVERIFY(a->ende.isValid());
 }
 
-void TestGui::protokollOhneAnmeldungSichtbar()
+void TestGui::protocolVisibleWithoutLogin()
 {
-    // explizit NICHT angemeldet
+
     Auth::logout();
-    QCOMPARE(Auth::rolle(), Auth::Keine);
+    QCOMPARE(Auth::role(), Auth::None);
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab1 = tabs->widget(1);
-    // im Teile-Tab: Doppelklick auf einen fertigen Auftrag -> Plot muss Serien haben (ohne Login)
+
     auto *view = tab1->findChild<QTableView*>();
     auto *plot = tab1->findChild<PlotWidget*>();
     QVERIFY(plot);
-    auto *model = static_cast<AuftragModel*>(view->model());
+    auto *model = static_cast<JobModel*>(view->model());
+
+    int pending = -1;
+    for (int i = 0; i < model->rowCount(); ++i)
+        if (model->jobAtRow(i)->jobResult == QLatin1String("ausstehend")) { pending = i; break; }
+    QVERIFY(pending >= 0);
+    emit view->clicked(model->index(pending, 0));
+    QTest::qWait(30);
+    QVERIFY(plot->chart()->series().isEmpty());
+    QVERIFY(plot->currentJob().isEmpty());
+
     int ziel = -1;
     for (int i = 0; i < model->rowCount(); ++i) {
-        const auto *a = model->auftragAt(i);
-        if (a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+        const auto *a = model->jobAtRow(i);
+        if (a->jobResult != QLatin1String("ausstehend") && a->ende.isValid()) {
             ziel = i; break;
         }
     }
     QVERIFY(ziel >= 0);
-    emit view->doubleClicked(model->index(ziel, 0));
-    QTest::qWait(50);
-    QVERIFY(!plot->chart()->series().isEmpty());   // Protokoll gezeichnet, ohne Anmeldung
-    // nochmal einen anderen fertigen Auftrag anklicken
+    const QString zielId = model->jobAtRow(ziel)->jobId;
+    QSignalSpy spy(w->loader(), &ProtocolLoader::fertig);
+    emit view->clicked(model->index(ziel, 0));
+    if (!w->loader()->isCached(zielId))
+        QVERIFY(spy.wait(5000));
+    QTest::qWait(10);
+    QVERIFY(!plot->chart()->series().isEmpty());
+    QCOMPARE(plot->currentJob(), zielId);
+
     int ziel2 = -1;
     for (int i = 0; i < model->rowCount(); ++i) {
-        const auto *a = model->auftragAt(i);
-        if (i != ziel && a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+        const auto *a = model->jobAtRow(i);
+        if (i != ziel && a->jobResult != QLatin1String("ausstehend") && a->ende.isValid()) {
             ziel2 = i; break;
         }
     }
     QVERIFY(ziel2 >= 0);
-    emit view->doubleClicked(model->index(ziel2, 0));
-    QTest::qWait(50);
+    const QString ziel2Id = model->jobAtRow(ziel2)->jobId;
+    QSignalSpy spy2(w->loader(), &ProtocolLoader::fertig);
+    emit view->clicked(model->index(ziel2, 0));
+    if (!w->loader()->isCached(ziel2Id))
+        QVERIFY(spy2.wait(5000));
+    QTest::qWait(10);
     QVERIFY(!plot->chart()->series().isEmpty());
-    // Zeitachse in Minuten (Kategorieachse mit echten Minuten-Labels), Y ganzzahlig
+    QCOMPARE(plot->currentJob(), ziel2Id);
+
     auto *ax = plot->chart()->axes(Qt::Horizontal).first();
     QVERIFY(ax);
     QVERIFY(ax->titleText().contains(QStringLiteral("min")));
@@ -563,9 +588,9 @@ void TestGui::protokollOhneAnmeldungSichtbar()
     QCOMPARE(ay->labelFormat(), QStringLiteral("%.0f"));
 }
 
-void TestGui::belegungsplanNurFuerAdmin()
+void TestGui::scheduleAdminOnly()
 {
-    // abgemeldet: Belegungsplan-Button im Teile-Tab nicht sichtbar
+
     Auth::logout();
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab1 = tabs->widget(1);
@@ -573,20 +598,20 @@ void TestGui::belegungsplanNurFuerAdmin()
     QVERIFY(!buttons.isEmpty());
     for (auto *b : buttons)
         QVERIFY(!b->isVisibleTo(tab1) || !b->text().contains(QString::fromUtf8("Belegungsplan")));
-    // nur eine Tabelle im Tab (keine doppelte Jobliste unten)
+
     QCOMPARE(tab1->findChildren<QTableView*>().size(), 1);
-    // Plot oben vorhanden und nimmt Breite ein
+
     QVERIFY(tab1->findChild<PlotWidget*>());
 }
 
-void TestGui::dezimalpunktIstPunkt()
+void TestGui::decimalPointIsDot()
 {
-    // Zahlen in der GUI nur als Integer (weder Komma noch Punkt als Dezimaltrenner)
+
     auto *tabs = w->findChild<QTabWidget*>();
     auto *view = tabs->widget(0)->findChild<QTableView*>();
-    auto *model = static_cast<DruckerModel*>(view->model());
-    const QVariant v = model->data(model->index(0, DruckerModel::ColBetriebsstunden), Qt::DisplayRole);
-    QVERIFY(v.typeId() == QMetaType::LongLong || v.typeId() == QMetaType::Int);  // Integer, kein double
+    auto *model = static_cast<PrinterModel*>(view->model());
+    const QVariant v = model->data(model->index(0, PrinterModel::ColOperatingHours), Qt::DisplayRole);
+    QVERIFY(v.typeId() == QMetaType::LongLong || v.typeId() == QMetaType::Int);
     auto *delegate = qobject_cast<QStyledItemDelegate*>(view->itemDelegate());
     QVERIFY(delegate);
     QString text = delegate->displayText(v, QLocale());
@@ -594,64 +619,182 @@ void TestGui::dezimalpunktIstPunkt()
     QVERIFY(!text.contains(QLatin1Char('.')));
 }
 
-void TestGui::spracheUmschaltungKomplett()
+void TestGui::languageSwitchComplete()
 {
-    // Sprachaktion = letzter Eintrag im Ansicht/View-Menü (zustandsunabhängig)
+
     auto sprachAktion = [this]() -> QAction* {
         return w->menuBar()->actions().at(1)->menu()->actions().last();
     };
     if (w->findChild<QTabWidget*>()->tabText(0) != QString::fromUtf8("Druckerliste"))
-        sprachAktion()->trigger();   // erst auf Deutsch
-    // auf Englisch umschalten
+        sprachAktion()->trigger();
+
     sprachAktion()->trigger();
     auto *tabs = w->findChild<QTabWidget*>();
     QVERIFY(tabs);
-    // Tabs übersetzt
+
     QCOMPARE(tabs->tabText(0), QStringLiteral("Printers"));
     QCOMPARE(tabs->tabText(1), QStringLiteral("Printed parts"));
     QCOMPARE(tabs->tabText(3), QStringLiteral("Error log"));
-    // Menüs übersetzt
+
     QVERIFY(w->menuBar()->actions()[0]->text().contains(QStringLiteral("File")));
-    // Filter-Combo im Drucker-Tab übersetzt
+
     auto *tab0 = tabs->widget(0);
     bool foundAllStatuses = false;
     for (auto *c : tab0->findChildren<QComboBox*>())
         if (c->itemText(0) == QStringLiteral("All statuses")) foundAllStatuses = true;
     QVERIFY(foundAllStatuses);
-    // Fehlerlog-Kategorie-Combo übersetzt
+
     auto *tab3 = tabs->widget(3);
     bool foundAllCat = false;
     for (auto *c : tab3->findChildren<QComboBox*>())
         if (c->itemText(0) == QStringLiteral("All categories")) foundAllCat = true;
     QVERIFY(foundAllCat);
-    // Protokoll-/Dateninhalte bleiben Deutsch (z. B. Ergebniswerte in der Tabelle)
+
     auto *tab1 = tabs->widget(1);
     auto *view1 = tab1->findChild<QTableView*>();
-    auto *amodel = static_cast<AuftragModel*>(view1->model());
+    auto *amodel = static_cast<JobModel*>(view1->model());
     bool deutschBleibt = false;
     for (int i = 0; i < amodel->rowCount(); ++i) {
-        const QString e = amodel->data(amodel->index(i, AuftragModel::ColErgebnis), Qt::DisplayRole).toString();
+        const QString e = amodel->data(amodel->index(i, JobModel::ColResult), Qt::DisplayRole).toString();
         if (e == QLatin1String("erfolgreich") || e == QLatin1String("ausstehend")) deutschBleibt = true;
     }
     QVERIFY(deutschBleibt);
-    // zurück auf Deutsch
+
     sprachAktion()->trigger();
     tabs = w->findChild<QTabWidget*>();
     QCOMPARE(tabs->tabText(0), QString::fromUtf8("Druckerliste"));
 }
 
-void TestGui::plotLegendeUebersetzt()
+void TestGui::enModeNoGermanFallbacks()
 {
-    // Protokoll zeichnen und Legenden-Namen prüfen (Deutsch), dann Englisch
+
+    auto sprachAktion = [this]() -> QAction* {
+        return w->menuBar()->actions().at(1)->menu()->actions().last();
+    };
+    if (w->findChild<QTabWidget*>()->tabText(0) != QString::fromUtf8("Druckerliste"))
+        sprachAktion()->trigger();
+    sprachAktion()->trigger();
+    auto *tabs = w->findChild<QTabWidget*>();
+    QVERIFY(tabs);
+    QCOMPARE(tabs->tabText(0), QStringLiteral("Printers"));
+
+    bool fullscreenFound = false;
+    bool loginMenuFound = false;
+    for (auto *m : w->menuBar()->actions()) {
+        if (m->text().contains(QStringLiteral("View")))
+            for (auto *a : m->menu()->actions())
+                if (a->text() == QStringLiteral("Fullscreen (F)")) fullscreenFound = true;
+        if (m->text().contains(QStringLiteral("Login"))) {
+            loginMenuFound = true;
+            QCOMPARE(m->menu()->actions().first()->text(), QStringLiteral("Log in..."));
+        }
+    }
+    QVERIFY(fullscreenFound);
+    QVERIFY(loginMenuFound);
+
+    for (int t : {0, 1, 3}) {
+        bool resetFound = false;
+        for (auto *b : tabs->widget(t)->findChildren<QPushButton*>()) {
+            if (b->text() == QStringLiteral("Reset filters")) {
+                resetFound = true;
+                QVERIFY2(b->toolTip().contains(QStringLiteral("Reset")),
+                         qPrintable(QStringLiteral("Tab %1 Tooltip: %2").arg(t).arg(b->toolTip())));
+                QVERIFY2(!b->toolTip().contains(QString::fromUtf8("zurücksetzen")),
+                         qPrintable(QStringLiteral("Tab %1 Tooltip: %2").arg(t).arg(b->toolTip())));
+            }
+        }
+        QVERIFY2(resetFound, qPrintable(QStringLiteral("Tab %1: Reset-Button fehlt").arg(t)));
+    }
+
+    auto *tab2 = tabs->widget(2);
+    bool statsBoxFound = false;
+    for (auto *g : tab2->findChildren<QGroupBox*>())
+        if (g->title() == QStringLiteral("Consumption statistics")) statsBoxFound = true;
+    QVERIFY(statsBoxFound);
+    auto *chartView = tab2->findChild<QChartView*>();
+    QVERIFY(chartView);
+    QCOMPARE(chartView->chart()->title(),
+             QStringLiteral("Consumption in 6-hour intervals (successful prints)"));
+    auto *ls = qobject_cast<QLineSeries*>(chartView->chart()->series().first());
+    QVERIFY(ls);
+    QCOMPARE(ls->name(), QStringLiteral("Filament [kg]"));
+    auto *axisX = qobject_cast<QDateTimeAxis*>(chartView->chart()->axes(Qt::Horizontal).first());
+    QVERIFY(axisX);
+    QCOMPARE(axisX->titleText(), QStringLiteral("Day"));
+    auto *matView = tab2->findChild<QTableView*>();
+    QVERIFY(matView);
+    QCOMPARE(matView->model()->headerData(7, Qt::Horizontal, Qt::DisplayRole).toString(),
+             QStringLiteral("Ø consumption/week [kg]"));
+    bool statsEn = false;
+    for (auto *l : tab2->findChildren<QLabel*>())
+        if (l->text().contains(QStringLiteral("Consumption statistics:"))
+            && l->text().contains(QStringLiteral("Per material:"))
+            && l->text().contains(QStringLiteral("Error codes:")))
+            statsEn = true;
+    QVERIFY(statsEn);
+
+    LoginDialog dlg(w);
+    QCOMPARE(dlg.windowTitle(), QStringLiteral("Log in"));
+    QStringList dialogLabels;
+    for (auto *l : dlg.findChildren<QLabel*>()) dialogLabels << l->text();
+    QVERIFY(dialogLabels.contains(QStringLiteral("Password:")));
+    QVERIFY(dialogLabels.contains(QStringLiteral("Role:")));
+    QVERIFY(!dialogLabels.contains(QString::fromUtf8("Passwort:")));
+
+    QCOMPARE(QCoreApplication::translate("MainWindow", "Anmeldung"), QStringLiteral("Login"));
+    QCOMPARE(QCoreApplication::translate("MainWindow", "Fehlgeschlagene Anmeldung (falsches Passwort)"),
+             QStringLiteral("Failed login (wrong password)"));
+    QCOMPARE(QCoreApplication::translate("MainWindow", "Falsches Passwort für die gewählte Rolle."),
+             QStringLiteral("Wrong password for the selected role."));
+    QCOMPARE(QCoreApplication::translate("MainWindow", "Anmeldung fehlgeschlagen: falsches Passwort."),
+             QStringLiteral("Login failed: wrong password."));
+    QCOMPARE(QCoreApplication::translate("PrinterWidget", "Ungültige Eingabe"),
+             QStringLiteral("Invalid input"));
+    QCOMPARE(QCoreApplication::translate("PrinterWidget",
+             "PID-Werte müssen gültige Zahlen sein. Änderung verworfen."),
+             QStringLiteral("PID values must be valid numbers. Change discarded."));
+
+    const QStringList deutscheFallbacks = {
+        QString::fromUtf8("Filter zurücksetzen"), QString::fromUtf8("Vollbild"),
+        QString::fromUtf8("Passwort:"), QString::fromUtf8("Verbrauchsstatistik"),
+        QString::fromUtf8("Anmeldung"), QString::fromUtf8("Fehlercodes:"),
+        QString::fromUtf8("Pro Material:"), QString::fromUtf8("Ungültige Eingabe"),
+        QString::fromUtf8("Ø Verbrauch/Woche"), QString::fromUtf8("zurücksetzen"),
+    };
+    QStringList allTexts;
+    for (auto *m : w->menuBar()->actions()) {
+        allTexts << m->text();
+        if (m->menu())
+            for (auto *a : m->menu()->actions()) allTexts << a->text();
+    }
+    for (int t = 0; t < tabs->count(); ++t) allTexts << tabs->tabText(t);
+    for (auto *b : w->findChildren<QAbstractButton*>()) allTexts << b->text();
+    for (auto *l : w->findChildren<QLabel*>()) allTexts << l->text();
+    for (auto *g : w->findChildren<QGroupBox*>()) allTexts << g->title();
+    for (auto *c : w->findChildren<QComboBox*>())
+        for (int i = 0; i < c->count(); ++i) allTexts << c->itemText(i);
+    for (const auto &dt : deutscheFallbacks)
+        for (const auto &txt : allTexts)
+            QVERIFY2(!txt.contains(dt),
+                     qPrintable(QStringLiteral("Deutscher Fallback '%1' in: '%2'").arg(dt, txt)));
+
+    sprachAktion()->trigger();
+    tabs = w->findChild<QTabWidget*>();
+    QCOMPARE(tabs->tabText(0), QString::fromUtf8("Druckerliste"));
+}
+
+void TestGui::plotLegendTranslated()
+{
+
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab1 = tabs->widget(1);
     auto *plot = tab1->findChild<PlotWidget*>();
     QVERIFY(plot);
     auto *view = tab1->findChild<QTableView*>();
-    auto *model = static_cast<AuftragModel*>(view->model());
+    auto *model = static_cast<JobModel*>(view->model());
     for (int i = 0; i < model->rowCount(); ++i) {
-        const auto *a = model->auftragAt(i);
-        if (a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+        const auto *a = model->jobAtRow(i);
+        if (a->jobResult != QLatin1String("ausstehend") && a->ende.isValid()) {
             emit view->doubleClicked(model->index(i, 0));
             break;
         }
@@ -662,20 +805,19 @@ void TestGui::plotLegendeUebersetzt()
         names << s->name();
     QVERIFY(names.contains(QString::fromUtf8("Düsentemperatur")));
     QVERIFY(names.contains(QString::fromUtf8("Betttemperatur")));
-    QVERIFY(!names.contains(QString::fromUtf8("Druckstart")));          // Start/Ende nicht im Plot
+    QVERIFY(!names.contains(QString::fromUtf8("Druckstart")));
     QVERIFY(!names.contains(QString::fromUtf8("Druckende")));
-    QVERIFY(!names.contains(QString::fromUtf8("Düse Ist (Druck)")));   // alte Namen weg
+    QVERIFY(!names.contains(QString::fromUtf8("Düse Ist (Druck)")));
 
-    // Englisch umschalten -> Legende übersetzt
     if (tabs->tabText(0) != QStringLiteral("Printers"))
         w->menuBar()->actions().at(1)->menu()->actions().last()->trigger();
     tabs = w->findChild<QTabWidget*>();
     plot = tabs->widget(1)->findChild<PlotWidget*>();
     view = tabs->widget(1)->findChild<QTableView*>();
-    model = static_cast<AuftragModel*>(view->model());
+    model = static_cast<JobModel*>(view->model());
     for (int i = 0; i < model->rowCount(); ++i) {
-        const auto *a = model->auftragAt(i);
-        if (a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+        const auto *a = model->jobAtRow(i);
+        if (a->jobResult != QLatin1String("ausstehend") && a->ende.isValid()) {
             emit view->doubleClicked(model->index(i, 0));
             break;
         }
@@ -688,75 +830,75 @@ void TestGui::plotLegendeUebersetzt()
     QVERIFY(names.contains(QStringLiteral("Bed temperature")));
     QVERIFY(!names.contains(QStringLiteral("Print start")));
     QVERIFY(!names.contains(QStringLiteral("Print end")));
-    // zurück auf Deutsch
+
     w->menuBar()->actions().at(1)->menu()->actions().last()->trigger();
 }
 
-void TestGui::singleClickAktualisiertProtokoll()
+void TestGui::singleClickUpdatesProtocol()
 {
-    // Single-Click auf anderen Job -> Plot-Titel (enthält Auftrags-ID) muss wechseln
+
     auto *tabs = w->findChild<QTabWidget*>();
     auto *tab1 = tabs->widget(1);
     auto *view = tab1->findChild<QTableView*>();
     auto *plot = tab1->findChild<PlotWidget*>();
-    auto *model = static_cast<AuftragModel*>(view->model());
+    auto *model = static_cast<JobModel*>(view->model());
     int z1 = -1, z2 = -1;
     for (int i = 0; i < model->rowCount(); ++i) {
-        const auto *a = model->auftragAt(i);
-        if (a->ergebnis != QLatin1String("ausstehend") && a->ende.isValid()) {
+        const auto *a = model->jobAtRow(i);
+        if (a->jobResult != QLatin1String("ausstehend") && a->ende.isValid()) {
             if (z1 < 0) z1 = i; else { z2 = i; break; }
         }
     }
     QVERIFY(z1 >= 0 && z2 >= 0);
     emit view->clicked(model->index(z1, 0));
     QTest::qWait(30);
-    QCOMPARE(plot->aktuellerAuftrag(), model->auftragAt(z1)->auftragId);
-    QVERIFY(plot->chart()->title().isEmpty());   // keine Überschrift
-    QCOMPARE(plot->chart()->legend()->alignment(), Qt::AlignBottom | Qt::AlignLeft);   // Legende unten links
-    emit view->clicked(model->index(z2, 0));   // Single-Click auf neuen Job
+    QCOMPARE(plot->currentJob(), model->jobAtRow(z1)->jobId);
+    QVERIFY(plot->chart()->title().isEmpty());
+    QCOMPARE(plot->chart()->legend()->alignment(), Qt::AlignBottom | Qt::AlignLeft);
+    emit view->clicked(model->index(z2, 0));
     QTest::qWait(30);
-    QCOMPARE(plot->aktuellerAuftrag(), model->auftragAt(z2)->auftragId);
-    QVERIFY(plot->aktuellerAuftrag() != model->auftragAt(z1)->auftragId);
+    QCOMPARE(plot->currentJob(), model->jobAtRow(z2)->jobId);
+    QVERIFY(plot->currentJob() != model->jobAtRow(z1)->jobId);
 }
 
-void TestGui::adaptiveZeitachseSkaliert()
+void TestGui::adaptiveTimeScaleTested()
 {
-    // Signal: lange stabile Phase, dann ein Sprung, dann wieder stabil
+
     QVector<QPointF> pts;
-    for (int i = 0; i < 1000; ++i) pts.append({double(i), 100.0});          // stabil
-    for (int i = 0; i < 50; ++i) pts.append({1000.0 + i, 100.0 + i * 2.0});  // Sprung
-    for (int i = 0; i < 1000; ++i) pts.append({1050.0 + i, 200.0});          // stabil
-    const auto warp = PlotWidget::adaptiveZeitachse(pts, true);
-    const auto lin = PlotWidget::adaptiveZeitachse(pts, false);
+    for (int i = 0; i < 1000; ++i) pts.append({double(i), 100.0});
+    for (int i = 0; i < 50; ++i) pts.append({1000.0 + i, 100.0 + i * 2.0});
+    for (int i = 0; i < 1000; ++i) pts.append({1050.0 + i, 200.0});
+    const auto warp = PlotWidget::adaptiveTimeScale(pts, true);
+    const auto lin = PlotWidget::adaptiveTimeScale(pts, false);
     QCOMPARE(warp.size(), pts.size());
     QCOMPARE(lin.size(), pts.size());
-    // linear: display-x == reale Zeit
+
     QCOMPARE(lin.last(), pts.last().x());
-    // adaptiv: Endpunkte anchors bleiben, Gesamtspanne gestreckt
+
     QCOMPARE(warp.first(), pts.first().x());
     QVERIFY(warp.last() > lin.last());
-    // Sprungbereich (Index 1000..1050) ist pro realer Minute breiter als der stabile Bereich davor
-    const double dxStabil = (warp[999] - warp[0]) / 999.0;                  // px pro Minute stabil
-    const double dxSprung = (warp[1050] - warp[1000]) / 50.0;                // px pro Minute im Sprung
-    QVERIFY(dxSprung > dxStabil * 5);   // Sprung deutlich breiter skaliert
-    // Standardmodus: linear
-    QCOMPARE(PlotWidget::adaptiveZeitachse(pts, false).last(), pts.last().x());
+
+    const double dxStable = (warp[999] - warp[0]) / 999.0;
+    const double dxSprung = (warp[1050] - warp[1000]) / 50.0;
+    QVERIFY(dxSprung > dxStable * 5);
+
+    QCOMPARE(PlotWidget::adaptiveTimeScale(pts, false).last(), pts.last().x());
 }
 
-void TestGui::adaptivToggleAchse()
+void TestGui::adaptiveToggleAxis()
 {
     PlotWidget plot;
     plot.resize(800, 400);
     plot.show();
     QTest::qWait(20);
-    Protokoll p;
-    p.auftragId = "JT";
-    p.dueseSollC = 210;
+    PrintLog p;
+    p.jobId = "JT";
+    p.nozzleTargetC = 210;
     for (int i = 0; i < 2000; ++i) {
-        Messpunkt m; m.zeitS = i; m.dueseIstC = (i == 1000) ? 220.0 : 100.0 + (i % 5); m.bettIstC = 60;
-        p.aufheizen.append(m);
+        Sample m; m.timeS = i; m.nozzleActualC = (i == 1000) ? 220.0 : 100.0 + (i % 5); m.bedActualC = 60;
+        p.heatUp.append(m);
     }
-    plot.zeigeProtokoll(p);
+    plot.showProtocol(p);
     auto count = [&]() -> int {
         for (auto *s : plot.chart()->series())
             if (s->name() == QString::fromUtf8("Düsentemperatur"))
@@ -770,18 +912,212 @@ void TestGui::adaptivToggleAchse()
     };
     auto *box = plot.findChild<QCheckBox*>();
     QVERIFY(box);
-    QVERIFY(!box->isChecked());           // default: adaptiv AUS (lineare Zeit)
-    QCOMPARE(count(), 2000);              // ALLE Punkte bleiben (kein Downsampling)
+    QVERIFY(!box->isChecked());
+    QCOMPARE(count(), 2000);
     const double spanStandard = span();
-    QCOMPARE(spanStandard, 1999.0 / 60.0);          // linear: reale Zeitspanne in min
-    box->setChecked(true);                // adaptiv einschalten
+    QCOMPARE(spanStandard, 1999.0 / 60.0);
+    box->setChecked(true);
     QTest::qWait(20);
-    QCOMPARE(count(), 2000);              // weiterhin alle Punkte
-    const double spanAdaptiv = span();
-    QVERIFY(spanAdaptiv > spanStandard);            // adaptiv: Achse gestreckt
+    QCOMPARE(count(), 2000);
+    const double spanAdaptive = span();
+    QVERIFY(spanAdaptive > spanStandard);
     box->setChecked(false);
     QTest::qWait(20);
     QCOMPARE(span(), spanStandard);
+}
+
+void TestGui::pidDialogRankingAndFit()
+{
+
+    const Printer *d = w->store()->printer(QStringLiteral("D025"));
+    QVERIFY(d);
+    PidSimDialog dlg(*d, w->store(), w->loader(), w);
+    dlg.show();
+    QTest::qWait(30);
+
+    auto *liste = dlg.findChild<QListWidget*>();
+    QVERIFY(liste);
+    QCOMPARE(liste->count(), 7);
+    QVERIFY(liste->item(0)->text().startsWith(QStringLiteral("1.")));
+    QVERIFY(liste->item(0)->text().contains(QString::fromUtf8("Ausregelzeit")));
+
+    auto *plot = dlg.findChild<PlotWidget*>();
+    QVERIFY(plot);
+    QCOMPARE(plot->chart()->series().size(), 8);
+
+    bool ergOk = false;
+    for (auto *l : dlg.findChildren<QLabel*>())
+        if (l->text().contains(QString::fromUtf8("Ausregelzeit")) && l->text().contains(QString::fromUtf8("Simuliert")))
+            ergOk = true;
+    QVERIFY(ergOk);
+
+    QCheckBox *fit = nullptr;
+    for (auto *c : dlg.findChildren<QCheckBox*>())
+        if (c->text().contains(QString::fromUtf8("fitten"))) fit = c;
+    QVERIFY(fit);
+    fit->setChecked(true);
+    QTest::qWait(50);
+    bool fitOk = false;
+    for (auto *l : dlg.findChildren<QLabel*>())
+        if (l->text().contains(QString::fromUtf8("gefitten")) && l->text().contains(QStringLiteral("J")))
+            fitOk = true;
+    QVERIFY(fitOk);
+    fit->setChecked(false);
+    QTest::qWait(30);
+    bool presetOk = false;
+    for (auto *l : dlg.findChildren<QLabel*>())
+        if (l->text().contains(QString::fromUtf8("Modell-Preset"))) presetOk = true;
+    QVERIFY(presetOk);
+}
+
+void TestGui::maintenanceTableInDetailDialog()
+{
+
+    const Printer *d = w->store()->printer(QStringLiteral("D058"));
+    QVERIFY(d);
+    int erwartet = 0;
+    for (const auto &wt : w->store()->maintenances())
+        if (wt.printerId == QStringLiteral("D058")) ++erwartet;
+    QCOMPARE(erwartet, 5);
+    PrinterDetailDialog dlg(*d, w->store(), w->loader(), w);
+    dlg.show();
+    QTest::qWait(30);
+
+    QTableView *wartView = nullptr;
+    for (auto *v : dlg.findChildren<QTableView*>())
+        if (qobject_cast<MaintenanceModel*>(v->model())) wartView = v;
+    QVERIFY(wartView);
+    QCOMPARE(wartView->model()->rowCount(), 5);
+
+    PrinterDetailDialog dlg2(*w->store()->printer(QStringLiteral("D001")), w->store(), w->loader(), w);
+    dlg2.show();
+    QTest::qWait(30);
+    int andere = 0;
+    for (const auto &wt : w->store()->maintenances())
+        if (wt.printerId == QStringLiteral("D001")) ++andere;
+    for (auto *v : dlg2.findChildren<QTableView*>())
+        if (qobject_cast<MaintenanceModel*>(v->model()))
+            QCOMPARE(v->model()->rowCount(), andere);
+}
+
+void TestGui::sqliteImportMenuPresent()
+{
+
+    bool found = false;
+    for (auto *m : w->menuBar()->actions())
+        for (auto *a : m->menu()->actions())
+            if (a->text().contains(QStringLiteral("SQLite")) &&
+                a->text().toLower().contains(QStringLiteral("import")))
+                found = true;
+    QVERIFY(found);
+
+    bool exportFound = false;
+    for (auto *m : w->menuBar()->actions())
+        for (auto *a : m->menu()->actions())
+            if (a->text().contains(QStringLiteral("SQLite")) &&
+                a->text().toLower().contains(QString::fromUtf8("export")))
+                exportFound = true;
+    QVERIFY(exportFound);
+}
+
+void TestGui::asyncLoadNonBlocking()
+{
+
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab1 = tabs->widget(1);
+    auto *view = tab1->findChild<QTableView*>();
+    auto *plot = tab1->findChild<PlotWidget*>();
+    auto *model = static_cast<JobModel*>(view->model());
+    QVERIFY(view && plot && model);
+    int ziel = -1;
+    for (int i = 0; i < model->rowCount(); ++i) {
+        const auto *a = model->jobAtRow(i);
+        if (a->jobResult != QLatin1String("ausstehend") && a->ende.isValid() &&
+            !w->loader()->isCached(a->jobId)) { ziel = i; break; }
+    }
+    QVERIFY(ziel >= 0);
+    const QString zielId = model->jobAtRow(ziel)->jobId;
+    QSignalSpy spy(w->loader(), &ProtocolLoader::fertig);
+    emit view->clicked(model->index(ziel, 0));
+
+    QVERIFY(plot->chart()->series().isEmpty());
+    QVERIFY(!w->loader()->isCached(zielId));
+
+    QVERIFY(spy.wait(5000));
+    QVERIFY(w->loader()->isCached(zielId));
+    QVERIFY(!plot->chart()->series().isEmpty());
+    QCOMPARE(plot->currentJob(), zielId);
+}
+
+void TestGui::rightsSeparationEnforced()
+{
+
+    Printer original;
+    original.printerId = QStringLiteral("D001"); original.modelId = QStringLiteral("MD01");
+    original.location = QStringLiteral("A-01-1"); original.status = QStringLiteral("bereit");
+    original.pidKp = 5.0; original.pidKi = 0.1; original.pidKd = 2.0;
+    Printer edited = original;
+    edited.location = QStringLiteral("B-02-2");
+    edited.status = QStringLiteral("wartung");
+    edited.pidKp = 9.9;
+
+    Auth::logout();
+    QCOMPARE(Auth::role(), Auth::None);
+    QVERIFY(!Auth::mayEditMasterData());
+    QVERIFY(!Auth::mayEditPid());
+    QVERIFY(!Auth::mayPlanJobs());
+    QVERIFY(!Auth::mayExport());
+    Printer out = PrinterWidget::applyRoleRestrictions(original, edited);
+    QCOMPARE(out.location, original.location);
+    QCOMPARE(out.status, original.status);
+    QCOMPARE(out.pidKp, original.pidKp);
+
+    QVERIFY(Auth::login(Auth::Operator, QStringLiteral("b1"), QStringLiteral("bediener123")));
+    QVERIFY(Auth::mayExport());
+    QVERIFY(!Auth::mayEditMasterData());
+    QVERIFY(!Auth::mayEditPid());
+    QVERIFY(!Auth::mayPlanJobs());
+    out = PrinterWidget::applyRoleRestrictions(original, edited);
+    QCOMPARE(out.location, original.location);
+    QCOMPARE(out.status, original.status);
+    QCOMPARE(out.pidKp, original.pidKp);
+
+    QVERIFY(Auth::login(Auth::Engineer, QStringLiteral("t1"), QStringLiteral("technik123")));
+    QVERIFY(Auth::mayEditPid());
+    QVERIFY(Auth::mayPlanJobs());
+    QVERIFY(!Auth::mayEditMasterData());
+    QVERIFY(Auth::mayExport());
+    out = PrinterWidget::applyRoleRestrictions(original, edited);
+    QCOMPARE(out.location, original.location);
+    QCOMPARE(out.status, original.status);
+    QCOMPARE(out.pidKp, 9.9);
+    QCOMPARE(out.pidKi, original.pidKi);
+    QCOMPARE(out.pidKd, original.pidKd);
+
+    Printer nurPid = original;
+    nurPid.pidKd = 7.7;
+    out = PrinterWidget::applyRoleRestrictions(original, nurPid);
+    QCOMPARE(out.pidKd, 7.7);
+    QCOMPARE(out.location, original.location);
+
+    QVERIFY(Auth::login(Auth::Admin, QStringLiteral("a1"), QStringLiteral("admin123")));
+    QVERIFY(Auth::mayEditMasterData());
+    QVERIFY(Auth::mayEditPid());
+    QVERIFY(Auth::mayPlanJobs());
+    QVERIFY(Auth::mayExport());
+    out = PrinterWidget::applyRoleRestrictions(original, edited);
+    QCOMPARE(out.location, QStringLiteral("B-02-2"));
+    QCOMPARE(out.status, QStringLiteral("wartung"));
+    QCOMPARE(out.pidKp, 9.9);
+
+    Auth::logout();
+    QVERIFY(!Auth::mayExport());
+    QVERIFY(!Auth::mayEditPid());
+    QVERIFY(!Auth::mayEditMasterData());
+    QVERIFY(!Auth::mayPlanJobs());
+    out = PrinterWidget::applyRoleRestrictions(original, edited);
+    QCOMPARE(out.location, original.location);
+    QCOMPARE(out.pidKp, original.pidKp);
 }
 
 QTEST_MAIN(TestGui)

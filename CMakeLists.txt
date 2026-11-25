@@ -15,11 +15,13 @@ qt_standard_project_setup()
 qt_add_executable(PrintFarm_Gruppe_03 WIN32   # WIN32 = GUI-Subsystem, kein Konsolenfenster
     src/main.cpp
     src/datatypes.h
+    src/theme.h
     src/csvio.h            src/csvio.cpp
     src/datastore.h        src/datastore.cpp
     src/protocol.h         src/protocol.cpp
     src/regelguete.h       src/regelguete.cpp
     src/analyse.h          src/analyse.cpp
+    src/pidsim.h           src/pidsim.cpp
     src/auth.h             src/auth.cpp
     src/plotwidget.h       src/plotwidget.cpp
     src/achseutil.h

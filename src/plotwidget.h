@@ -1,5 +1,5 @@
+// Temperatur-Plot (Qt Charts): Protokollverlauf und Simulations-Vergleich.
 #pragma once
-// Liniendiagramm auf Basis von Qt Charts: Temperaturverläufe pro Auftrag.
 
 #include <QChartView>
 #include <QLineSeries>
@@ -10,31 +10,26 @@ class PlotWidget : public QChartView {
 public:
     explicit PlotWidget(QWidget *parent = nullptr);
 
-    // Zeichnet Aufheiz- und Druckphase: Düse Soll/Ist, Bett Ist.
-    void zeigeProtokoll(const Protokoll &p);
-    // Zeichnet mehrere simulierte/meessene Sprungantworten (Regleranalyse).
-    void zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> &kurven,
-                        bool nurDueseIst = true);
-    void leeren();
-    void setDarkMode(bool dark);   // Chart-Theme an App-Theme koppeln (auch bei Runtime-Wechsel)
-    QString aktuellerAuftrag() const { return m_auftragId; }   // zuletzt gezeichneter Auftrag
+    void showProtocol(const PrintLog &p);
 
-    // Adaptive X-Achsen-Skalierung: bildet die reale Zeit non-linear auf die
-    // Anzeige-X ab: Bereiche mit starker Änderung werden gestreckt (breiter),
-    // stabile Bereiche gestaucht (kürzer). Alle Punkte bleiben erhalten.
-    // Rueckgabe: display-x pro Rohpunkt (bei linear: identisch mit realer Zeit).
-    static QVector<double> adaptiveZeitachse(const QVector<QPointF> &pts, bool adaptiv);
+    void showComparison(const QList<QPair<QString, QVector<Sample>>> &curves,
+                        bool onlyNozzleActual = true);
+    void clear();
+    void setDarkMode(bool dark);
+    QString currentJob() const { return m_jobId; }
+
+    static QVector<double> adaptiveTimeScale(const QVector<QPointF> &pts, bool adaptive);
 protected:
-    void resizeEvent(QResizeEvent *e) override;   // bei Skalierung neu decimieren
+    void resizeEvent(QResizeEvent *e) override;
 private:
-    void render();   // zeichnet Rohdaten (adaptiv oder Standard, je nach Toggle)
-    void achsenAnpassen();   // alle Achsen an Plotgroesse anpassen (nie "..."-Labels)
-    QString m_auftragId;
-    QList<QPair<QString, double>> m_xLabels;   // vollstaendige X-Labels mit Position (zum Ausduennen)
-    QVector<QPointF> m_duesePts, m_bettPts;   // Rohdaten (Zeit in min)
-    QVector<QPair<double, QString>> m_events; // (Zeit in min, Name)
+    void drawChart();
+    void adjustAxes();
+    QString m_jobId;
+    QList<QPair<QString, double>> m_xLabels;
+    QVector<QPointF> m_nozzlePts, m_bedPts;
+    QVector<QPair<double, QString>> m_events;
     double m_maxTemp = 250.0;
-    bool m_rohdaten = false;
-    bool m_adaptiv = false;  // Toggle: adaptive X-Achsen-Skalierung vs. lineare Zeit (Standard: aus)
-    class QCheckBox *m_adaptivBox = nullptr;
+    bool m_rawData = false;
+    bool m_adaptive = false;
+    class QCheckBox *m_adaptiveBox = nullptr;
 };

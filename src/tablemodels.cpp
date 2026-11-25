@@ -1,59 +1,60 @@
+// Implementierung siehe tablemodels.h.
+
 #include "tablemodels.h"
 #include "csvio.h"
 #include <QColor>
 #include <QtMath>
 
-// ---------------------------------------------------------------- DruckerModel
-DruckerModel::DruckerModel(const DataStore *store, QObject *parent)
+PrinterModel::PrinterModel(const DataStore *store, QObject *parent)
     : QAbstractTableModel(parent), m_store(store) { rebuild(); }
 
-void DruckerModel::rebuild()
+void PrinterModel::rebuild()
 {
     beginResetModel();
     m_rows.clear();
-    for (const auto &d : m_store->drucker()) {
+    for (const auto &d : m_store->printer()) {
         if (!m_status.isEmpty() && d.status != m_status) continue;
-        if (!m_kinematik.isEmpty()) {
-            const Modell *m = m_store->modell(d.modellId);
-            if (!m || m->kinematik != m_kinematik) continue;
+        if (!m_kinematics.isEmpty()) {
+            const DeviceModel *m = m_store->model(d.modelId);
+            if (!m || m->kinematics != m_kinematics) continue;
         }
-        if (!m_text.isEmpty()) {
-            const Modell *m = m_store->modell(d.modellId);
-            const QString hay = QStringLiteral("%1 %2 %3").arg(d.druckerId,
-                m ? m->bezeichnung : QString(), d.standort).toLower();
-            if (!hay.contains(m_text.toLower())) continue;
+        if (!m_filterText.isEmpty()) {
+            const DeviceModel *m = m_store->model(d.modelId);
+            const QString hay = QStringLiteral("%1 %2 %3").arg(d.printerId,
+                m ? m->description : QString(), d.location).toLower();
+            if (!hay.contains(m_filterText.toLower())) continue;
         }
         m_rows.append(&d);
     }
     endResetModel();
 }
 
-void DruckerModel::setFilter(const QString &text, const QString &statusFilter, const QString &kinematikFilter)
-{ m_text = text; m_status = statusFilter; m_kinematik = kinematikFilter; rebuild(); }
-void DruckerModel::resetFilter() { setFilter({}, {}, {}); }
+void PrinterModel::setFilter(const QString &text, const QString &statusFilter, const QString &kinematicsFilter)
+{ m_filterText = text; m_status = statusFilter; m_kinematics = kinematicsFilter; rebuild(); }
+void PrinterModel::resetFilter() { setFilter({}, {}, {}); }
 
-int DruckerModel::rowCount(const QModelIndex &) const { return m_rows.size(); }
-int DruckerModel::columnCount(const QModelIndex &) const { return ColCount; }
+int PrinterModel::rowCount(const QModelIndex &) const { return m_rows.size(); }
+int PrinterModel::columnCount(const QModelIndex &) const { return ColCount; }
 
-const Drucker *DruckerModel::druckerAt(int row) const
+const Printer *PrinterModel::printerAtRow(int row) const
 { return (row >= 0 && row < m_rows.size()) ? m_rows[row] : nullptr; }
 
-QVariant DruckerModel::data(const QModelIndex &i, int role) const
+QVariant PrinterModel::data(const QModelIndex &i, int role) const
 {
-    const Drucker *d = druckerAt(i.row());
+    const Printer *d = printerAtRow(i.row());
     if (!d) return {};
     if (role == Qt::DisplayRole) {
-        const Modell *m = m_store->modell(d->modellId);
+        const DeviceModel *m = m_store->model(d->modelId);
         switch (i.column()) {
-        case ColId: return d->druckerId;
-        case ColModell: return m ? m->bezeichnung : QStringLiteral("?");
-        case ColStandort: return d->standort;
-        case ColBetriebsstunden: return qRound64(d->betriebsstunden);   // nur Integer anzeigen
+        case ColId: return d->printerId;
+        case ColModel: return m ? m->description : QStringLiteral("?");
+        case ColLocation: return d->location;
+        case ColOperatingHours: return qRound64(d->operatingHours);
         case ColStatus: return d->status;
         }
     }
     if (role == Qt::ForegroundRole && i.column() == ColStatus) {
-        // Status farbcodieren für schnelle Erfassung
+
         if (d->status == QLatin1String("defekt") || d->status == QLatin1String("kaputt"))
             return QColor(200, 30, 30);
         if (d->status.isEmpty()) return QColor(110, 110, 110);
@@ -62,137 +63,135 @@ QVariant DruckerModel::data(const QModelIndex &i, int role) const
         if (d->status == QLatin1String("bereit")) return QColor(0, 140, 60);
     }
     if (role == Qt::ToolTipRole)
-        return tr("Doppelklick für Details: %1").arg(d->druckerId);
+        return tr("Doppelklick für Details: %1").arg(d->printerId);
     return {};
 }
 
-void DruckerModel::sort(int column, Qt::SortOrder order)
+void PrinterModel::sort(int column, Qt::SortOrder order)
 {
     beginResetModel();
-    // korrekte strikte schwache Ordnung: bei Gleichheit weder < noch > zurückgeben,
-    // sonst Absturz in std::sort (besonders bei absteigender Sortierung mit Duplikaten)
-    std::sort(m_rows.begin(), m_rows.end(), [this, column, order](const Drucker *a, const Drucker *b) {
-        const Modell *ma = m_store->modell(a->modellId), *mb = m_store->modell(b->modellId);
+
+    std::sort(m_rows.begin(), m_rows.end(), [this, column, order](const Printer *a, const Printer *b) {
+        const DeviceModel *ma = m_store->model(a->modelId), *mb = m_store->model(b->modelId);
         int cmp = 0;
         switch (column) {
-        case ColId: cmp = a->druckerId.compare(b->druckerId); break;
-        case ColModell: cmp = (ma ? ma->bezeichnung : QString()).compare(mb ? mb->bezeichnung : QString()); break;
-        case ColStandort: cmp = a->standort.compare(b->standort); break;
-        case ColBetriebsstunden: cmp = (a->betriebsstunden < b->betriebsstunden) ? -1 : (a->betriebsstunden > b->betriebsstunden) ? 1 : 0; break;
+        case ColId: cmp = a->printerId.compare(b->printerId); break;
+        case ColModel: cmp = (ma ? ma->description : QString()).compare(mb ? mb->description : QString()); break;
+        case ColLocation: cmp = a->location.compare(b->location); break;
+        case ColOperatingHours: cmp = (a->operatingHours < b->operatingHours) ? -1 : (a->operatingHours > b->operatingHours) ? 1 : 0; break;
         case ColStatus: cmp = a->status.compare(b->status); break;
-        default: cmp = a->druckerId.compare(b->druckerId);
+        default: cmp = a->printerId.compare(b->printerId);
         }
         return order == Qt::AscendingOrder ? cmp < 0 : cmp > 0;
     });
     endResetModel();
 }
 
-QVariant DruckerModel::headerData(int s, Qt::Orientation o, int role) const
+QVariant PrinterModel::headerData(int s, Qt::Orientation o, int role) const
 {
     if (o != Qt::Horizontal || role != Qt::DisplayRole) return {};
     switch (s) {
     case ColId: return tr("Drucker-ID");
-    case ColModell: return tr("Modell");
-    case ColStandort: return tr("Standort");
-    case ColBetriebsstunden: return tr("Betriebsstunden");
+    case ColModel: return tr("Modell");
+    case ColLocation: return tr("Standort");
+    case ColOperatingHours: return tr("Betriebsstunden");
     case ColStatus: return tr("Status");
     }
     return {};
 }
 
-// ---------------------------------------------------------------- AuftragModel
-AuftragModel::AuftragModel(const DataStore *store, QObject *parent)
+JobModel::JobModel(const DataStore *store, QObject *parent)
     : QAbstractTableModel(parent), m_store(store) { rebuild(); }
 
-void AuftragModel::rebuild()
+void JobModel::rebuild()
 {
     beginResetModel();
     m_rows.clear();
     for (const auto &a : m_store->auftraege()) {
-        if (!m_druckerId.isEmpty() && a.druckerId != m_druckerId) continue;
-        if (!m_ergebnis.isEmpty() && a.ergebnis != m_ergebnis) continue;
-        if (!m_text.isEmpty()) {
-            const QString hay = QStringLiteral("%1 %2 %3").arg(a.auftragId, a.druckerId, a.bauteil).toLower();
-            if (!hay.contains(m_text.toLower())) continue;
+        if (!m_printerId.isEmpty() && a.printerId != m_printerId) continue;
+        if (!m_resultLabel.isEmpty() && a.jobResult != m_resultLabel) continue;
+        if (!m_filterText.isEmpty()) {
+            const QString hay = QStringLiteral("%1 %2 %3").arg(a.jobId, a.printerId, a.part).toLower();
+            if (!hay.contains(m_filterText.toLower())) continue;
         }
         m_rows.append(&a);
     }
     endResetModel();
 }
 
-void AuftragModel::setFilter(const QString &text, const QString &ergebnisFilter)
-{ m_text = text; m_ergebnis = ergebnisFilter; rebuild(); }
-void AuftragModel::setNurDrucker(const QString &druckerId) { m_druckerId = druckerId; rebuild(); }
-void AuftragModel::resetFilter() { setFilter({}, {}); m_druckerId.clear(); rebuild(); }
+void JobModel::setFilter(const QString &text, const QString &resultFilter)
+{ m_filterText = text; m_resultLabel = resultFilter; rebuild(); }
+void JobModel::setPrinterOnly(const QString &printerId) { m_printerId = printerId; rebuild(); }
+void JobModel::resetFilter() { setFilter({}, {}); m_printerId.clear(); rebuild(); }
 
-int AuftragModel::rowCount(const QModelIndex &) const { return m_rows.size(); }
-int AuftragModel::columnCount(const QModelIndex &) const { return ColCount; }
-const Auftrag *AuftragModel::auftragAt(int row) const
+int JobModel::rowCount(const QModelIndex &) const { return m_rows.size(); }
+int JobModel::columnCount(const QModelIndex &) const { return ColCount; }
+const Job *JobModel::jobAtRow(int row) const
 { return (row >= 0 && row < m_rows.size()) ? m_rows[row] : nullptr; }
 
-QVariant AuftragModel::data(const QModelIndex &i, int role) const
+QVariant JobModel::data(const QModelIndex &i, int role) const
 {
-    const Auftrag *a = auftragAt(i.row());
+    const Job *a = jobAtRow(i.row());
     if (!a) return {};
     if (role == Qt::DisplayRole) {
         switch (i.column()) {
-        case ColId: return a->auftragId;
-        case ColDrucker: return a->druckerId;
-        case ColBauteil: return a->bauteil;
+        case ColId: return a->jobId;
+        case ColPrinter: return a->printerId;
+        case ColPart: return a->part;
         case ColStart: return CsvIo::formatDateTime(a->start);
-        case ColDauer: return qRound64(a->dauerSollMin);   // nur Integer anzeigen
-        case ColErgebnis: return a->ergebnis;
-        case ColFehler: return a->fehlercode;
+        case ColDuration: return qRound64(a->plannedMinutes);
+        case ColResult: return a->jobResult;
+        case ColError: return a->errorCode;
         }
     }
-    if (role == Qt::ForegroundRole && i.column() == ColErgebnis) {
-        if (a->ergebnis == QLatin1String("erfolgreich")) return QColor(0, 140, 60);
-        if (a->ergebnis == QLatin1String("fehlgeschlagen")) return QColor(200, 30, 30);
-        if (a->ergebnis == QLatin1String("abgebrochen")) return QColor(200, 130, 0);
-        if (a->ergebnis == QLatin1String("ausstehend")) return QColor(110, 110, 110);
+    if (role == Qt::ForegroundRole && i.column() == ColResult) {
+        if (a->jobResult == QLatin1String("erfolgreich")) return QColor(0, 140, 60);
+        if (a->jobResult == QLatin1String("fehlgeschlagen")) return QColor(200, 30, 30);
+        if (a->jobResult == QLatin1String("abgebrochen")) return QColor(200, 130, 0);
+        if (a->jobResult == QLatin1String("ausstehend")) return QColor(110, 110, 110);
     }
     if (role == Qt::ToolTipRole)
-        return tr("Doppelklick für Verlauf und Auswertung: %1").arg(a->auftragId);
+
+        return tr("Klick für Verlauf und Auswertung: %1").arg(a->jobId);
     return {};
 }
 
-QVariant AuftragModel::headerData(int s, Qt::Orientation o, int role) const
+QVariant JobModel::headerData(int s, Qt::Orientation o, int role) const
 {
     if (o != Qt::Horizontal || role != Qt::DisplayRole) return {};
     switch (s) {
     case ColId: return tr("Auftrag");
-    case ColDrucker: return tr("Drucker");
-    case ColBauteil: return tr("Bauteil");
+    case ColPrinter: return tr("Drucker");
+    case ColPart: return tr("Bauteil");
     case ColStart: return tr("Start");
-    case ColDauer: return tr("Soll [min]");
-    case ColErgebnis: return tr("Ergebnis");
-    case ColFehler: return tr("Fehlercode");
+    case ColDuration: return tr("Soll [min]");
+    case ColResult: return tr("Ergebnis");
+    case ColError: return tr("Fehlercode");
     }
     return {};
 }
 
-void AuftragModel::sort(int column, Qt::SortOrder order)
+void JobModel::sort(int column, Qt::SortOrder order)
 {
     beginResetModel();
-    // siehe DruckerModel::sort: Gleichheit korrekt behandeln (cmp == 0 -> false)
-    std::sort(m_rows.begin(), m_rows.end(), [column, order](const Auftrag *a, const Auftrag *b) {
+
+    std::sort(m_rows.begin(), m_rows.end(), [column, order](const Job *a, const Job *b) {
         int cmp = 0;
         switch (column) {
-        case ColId: cmp = a->auftragId.compare(b->auftragId); break;
-        case ColDrucker: cmp = a->druckerId.compare(b->druckerId); break;
-        case ColBauteil: cmp = a->bauteil.compare(b->bauteil); break;
+        case ColId: cmp = a->jobId.compare(b->jobId); break;
+        case ColPrinter: cmp = a->printerId.compare(b->printerId); break;
+        case ColPart: cmp = a->part.compare(b->part); break;
         case ColStart: cmp = (a->start < b->start) ? -1 : (a->start > b->start) ? 1 : 0; break;
-        case ColDauer: cmp = (a->dauerSollMin < b->dauerSollMin) ? -1 : (a->dauerSollMin > b->dauerSollMin) ? 1 : 0; break;
-        case ColErgebnis: cmp = a->ergebnis.compare(b->ergebnis); break;
-        case ColFehler: cmp = a->fehlercode.compare(b->fehlercode); break;
-        default: cmp = a->auftragId.compare(b->auftragId);
+        case ColDuration: cmp = (a->plannedMinutes < b->plannedMinutes) ? -1 : (a->plannedMinutes > b->plannedMinutes) ? 1 : 0; break;
+        case ColResult: cmp = a->jobResult.compare(b->jobResult); break;
+        case ColError: cmp = a->errorCode.compare(b->errorCode); break;
+        default: cmp = a->jobId.compare(b->jobId);
         }
         return order == Qt::AscendingOrder ? cmp < 0 : cmp > 0;
     });
     endResetModel();
 }
 
-// ---------------------------------------------------------------- MaterialModel
 MaterialModel::MaterialModel(const DataStore *store, QObject *parent)
     : QAbstractTableModel(parent), m_store(store) { rebuild(); }
 
@@ -214,14 +213,14 @@ QVariant MaterialModel::data(const QModelIndex &i, int role) const
     const Material &m = *m_rows[i.row()];
     switch (i.column()) {
     case ColId: return m.materialId;
-    case ColBez: return m.bezeichnung;
-    case ColDuese: return qRound64(m.dueseTempC);
-    case ColBett: return qRound64(m.bettTempC);
-    case ColDichte: return qRound64(m.dichteGCm3);   // nur Integer anzeigen
-    case ColPreis: return qRound64(m.preisEurKg);
-    case ColLuefter: return qRound64(m.luefterProzent);
-    case ColWochenverbrauch:   // Ø kg/Woche aus den Auftragsdaten, 2 Nachkommastellen
-        return qRound(m_store->durchschnWochenverbrauchKg(m.materialId) * 100.0) / 100.0;
+    case ColBez: return m.description;
+    case ColNozzle: return qRound64(m.nozzleTempC);
+    case ColBed: return qRound64(m.bedTempC);
+    case ColDensity: return qRound64(m.densityGCm3);
+    case ColPrice: return qRound64(m.priceEurKg);
+    case ColFan: return qRound64(m.fanPercent);
+    case ColWeeklyConsumption:
+        return qRound(m_store->meanWeeklyConsumptionKg(m.materialId) * 100.0) / 100.0;
     }
     return {};
 }
@@ -231,12 +230,12 @@ QVariant MaterialModel::headerData(int s, Qt::Orientation o, int role) const
     switch (s) {
     case ColId: return tr("Material-ID");
     case ColBez: return tr("Bezeichnung");
-    case ColDuese: return tr("Düse [°C]");
-    case ColBett: return tr("Bett [°C]");
-    case ColDichte: return tr("Dichte [g/cm³]");
-    case ColPreis: return tr("Preis [€/kg]");
-    case ColLuefter: return tr("Lüfter [%]");
-    case ColWochenverbrauch: return tr("Ø Verbrauch/Woche [kg]");
+    case ColNozzle: return tr("Düse [°C]");
+    case ColBed: return tr("Bett [°C]");
+    case ColDensity: return tr("Dichte [g/cm³]");
+    case ColPrice: return tr("Preis [€/kg]");
+    case ColFan: return tr("Lüfter [%]");
+    case ColWeeklyConsumption: return tr("Ø Verbrauch/Woche [kg]");
     }
     return {};
 }
@@ -244,20 +243,25 @@ QVariant MaterialModel::headerData(int s, Qt::Orientation o, int role) const
 void MaterialModel::sort(int column, Qt::SortOrder order)
 {
     beginResetModel();
-    // strikte schwache Ordnung (cmp == 0 -> false), siehe DruckerModel::sort
-    std::sort(m_rows.begin(), m_rows.end(), [this, column, order](const Material *a, const Material *b) {
+
+    QHash<QString, double> weeklyConsumption;
+    if (column == ColWeeklyConsumption)
+        for (const Material *m : m_rows)
+            weeklyConsumption.insert(m->materialId, m_store->meanWeeklyConsumptionKg(m->materialId));
+
+    std::sort(m_rows.begin(), m_rows.end(), [this, column, order, &weeklyConsumption](const Material *a, const Material *b) {
         int cmp = 0;
         switch (column) {
         case ColId: cmp = a->materialId.compare(b->materialId); break;
-        case ColBez: cmp = a->bezeichnung.compare(b->bezeichnung); break;
-        case ColDuese: cmp = (a->dueseTempC < b->dueseTempC) ? -1 : (a->dueseTempC > b->dueseTempC) ? 1 : 0; break;
-        case ColBett: cmp = (a->bettTempC < b->bettTempC) ? -1 : (a->bettTempC > b->bettTempC) ? 1 : 0; break;
-        case ColDichte: cmp = (a->dichteGCm3 < b->dichteGCm3) ? -1 : (a->dichteGCm3 > b->dichteGCm3) ? 1 : 0; break;
-        case ColPreis: cmp = (a->preisEurKg < b->preisEurKg) ? -1 : (a->preisEurKg > b->preisEurKg) ? 1 : 0; break;
-        case ColLuefter: cmp = (a->luefterProzent < b->luefterProzent) ? -1 : (a->luefterProzent > b->luefterProzent) ? 1 : 0; break;
-        case ColWochenverbrauch: {
-            const double wa = m_store->durchschnWochenverbrauchKg(a->materialId);
-            const double wb = m_store->durchschnWochenverbrauchKg(b->materialId);
+        case ColBez: cmp = a->description.compare(b->description); break;
+        case ColNozzle: cmp = (a->nozzleTempC < b->nozzleTempC) ? -1 : (a->nozzleTempC > b->nozzleTempC) ? 1 : 0; break;
+        case ColBed: cmp = (a->bedTempC < b->bedTempC) ? -1 : (a->bedTempC > b->bedTempC) ? 1 : 0; break;
+        case ColDensity: cmp = (a->densityGCm3 < b->densityGCm3) ? -1 : (a->densityGCm3 > b->densityGCm3) ? 1 : 0; break;
+        case ColPrice: cmp = (a->priceEurKg < b->priceEurKg) ? -1 : (a->priceEurKg > b->priceEurKg) ? 1 : 0; break;
+        case ColFan: cmp = (a->fanPercent < b->fanPercent) ? -1 : (a->fanPercent > b->fanPercent) ? 1 : 0; break;
+        case ColWeeklyConsumption: {
+            const double wa = weeklyConsumption.value(a->materialId);
+            const double wb = weeklyConsumption.value(b->materialId);
             cmp = (wa < wb) ? -1 : (wa > wb) ? 1 : 0;
             break;
         }
@@ -268,129 +272,91 @@ void MaterialModel::sort(int column, Qt::SortOrder order)
     endResetModel();
 }
 
-// ---------------------------------------------------------------- ModellModel
-ModellModel::ModellModel(const DataStore *store, QObject *parent)
-    : QAbstractTableModel(parent), m_store(store) {}
-int ModellModel::rowCount(const QModelIndex &) const { return m_store->modelle().size(); }
-int ModellModel::columnCount(const QModelIndex &) const { return ColCount; }
-QVariant ModellModel::data(const QModelIndex &i, int role) const
-{
-    if (role != Qt::DisplayRole) return {};
-    const auto &list = m_store->modelle();
-    if (i.row() < 0 || i.row() >= list.size()) return {};
-    const Modell &m = list[i.row()];
-    switch (i.column()) {
-    case ColId: return m.modellId;
-    case ColHersteller: return m.hersteller;
-    case ColBez: return m.bezeichnung;
-    case ColKinematik: return m.kinematik;
-    case ColBauraum: return QStringLiteral("%1×%2×%3").arg(m.bauraumXMm).arg(m.bauraumYMm).arg(m.bauraumZMm);
-    case ColMaxDuese: return qRound64(m.maxDueseTempC);
-    case ColMaxBett: return qRound64(m.maxBettTempC);
-    }
-    return {};
-}
-QVariant ModellModel::headerData(int s, Qt::Orientation o, int role) const
-{
-    if (o != Qt::Horizontal || role != Qt::DisplayRole) return {};
-    switch (s) {
-    case ColId: return tr("Modell-ID");
-    case ColHersteller: return tr("Hersteller");
-    case ColBez: return tr("Bezeichnung");
-    case ColKinematik: return tr("Kinematik");
-    case ColBauraum: return tr("Bauraum [mm]");
-    case ColMaxDuese: return tr("max. Düse [°C]");
-    case ColMaxBett: return tr("max. Bett [°C]");
-    }
-    return {};
-}
-
-// ---------------------------------------------------------------- WartungModel
-WartungModel::WartungModel(const DataStore *store, QObject *parent)
+MaintenanceModel::MaintenanceModel(const DataStore *store, QObject *parent)
     : QAbstractTableModel(parent), m_store(store) { rebuild(); }
-void WartungModel::setNurDrucker(const QString &druckerId) { m_druckerId = druckerId; rebuild(); }
-void WartungModel::rebuild()
+void MaintenanceModel::setPrinterOnly(const QString &printerId) { m_printerId = printerId; rebuild(); }
+void MaintenanceModel::rebuild()
 {
     beginResetModel();
     m_rows.clear();
-    for (const auto &w : m_store->wartungen())
-        if (m_druckerId.isEmpty() || w.druckerId == m_druckerId)
+    for (const auto &w : m_store->maintenances())
+        if (m_printerId.isEmpty() || w.printerId == m_printerId)
             m_rows.append(&w);
     endResetModel();
 }
-int WartungModel::rowCount(const QModelIndex &) const { return m_rows.size(); }
-int WartungModel::columnCount(const QModelIndex &) const { return ColCount; }
-QVariant WartungModel::data(const QModelIndex &i, int role) const
+int MaintenanceModel::rowCount(const QModelIndex &) const { return m_rows.size(); }
+int MaintenanceModel::columnCount(const QModelIndex &) const { return ColCount; }
+QVariant MaintenanceModel::data(const QModelIndex &i, int role) const
 {
     if (role != Qt::DisplayRole || i.row() < 0 || i.row() >= m_rows.size()) return {};
-    const Wartung &w = *m_rows[i.row()];
+    const Maintenance &w = *m_rows[i.row()];
     switch (i.column()) {
-    case ColId: return w.wartungId;
-    case ColDrucker: return w.druckerId;
-    case ColDatum: return CsvIo::formatDate(w.datum);
-    case ColArt: return w.art;
-    case ColDauer: return qRound64(w.dauerMin);
-    case ColBemerkung: return w.bemerkung;
+    case ColId: return w.maintenanceId;
+    case ColPrinter: return w.printerId;
+    case ColDate: return CsvIo::formatDate(w.date);
+    case ColArt: return w.kind;
+    case ColDuration: return qRound64(w.durationMin);
+    case ColNote: return w.note;
     }
     return {};
 }
-QVariant WartungModel::headerData(int s, Qt::Orientation o, int role) const
+QVariant MaintenanceModel::headerData(int s, Qt::Orientation o, int role) const
 {
     if (o != Qt::Horizontal || role != Qt::DisplayRole) return {};
     switch (s) {
     case ColId: return tr("Wartung");
-    case ColDrucker: return tr("Drucker");
-    case ColDatum: return tr("Datum");
+    case ColPrinter: return tr("Drucker");
+    case ColDate: return tr("Datum");
     case ColArt: return tr("Art");
-    case ColDauer: return tr("Dauer [min]");
-    case ColBemerkung: return tr("Bemerkung");
+    case ColDuration: return tr("Dauer [min]");
+    case ColNote: return tr("Bemerkung");
     }
     return {};
 }
 
-// ---------------------------------------------------------------- LogModel
 LogModel::LogModel(const DataStore *store, QObject *parent)
-    : QAbstractTableModel(parent), m_store(store) {}
-void LogModel::setKategorieFilter(int kat) { m_katFilter = kat; refresh(); }
-void LogModel::refresh() { beginResetModel(); endResetModel(); }
-int LogModel::rowCount(const QModelIndex &) const
+    : QAbstractTableModel(parent), m_store(store) { rebuildIndex(); }
+void LogModel::setCategoryFilter(int category) { m_categoryFilter = category; refresh(); }
+void LogModel::refresh()
 {
-    if (m_katFilter < 0) return m_store->log().size();
-    int n = 0;
-    for (const auto &e : m_store->log())
-        if (e.kategorie == m_katFilter) ++n;
-    return n;
+    beginResetModel();
+    rebuildIndex();
+    endResetModel();
 }
+
+void LogModel::rebuildIndex()
+{
+    m_index.clear();
+    const auto &log = m_store->log();
+    m_index.reserve(log.size());
+    for (int k = log.size() - 1; k >= 0; --k)
+        if (m_categoryFilter < 0 || log[k].category == m_categoryFilter)
+            m_index.append(k);
+}
+int LogModel::rowCount(const QModelIndex &) const { return m_index.size(); }
 int LogModel::columnCount(const QModelIndex &) const { return ColCount; }
 QVariant LogModel::data(const QModelIndex &i, int role) const
 {
     if (role != Qt::DisplayRole) return {};
-    int row = i.row();
+    if (i.row() < 0 || i.row() >= m_index.size()) return {};
     const auto &log = m_store->log();
-    int idx = -1;
-    for (int k = log.size() - 1; k >= 0; --k) {   // neueste zuerst
-        if (m_katFilter < 0 || log[k].kategorie == m_katFilter) {
-            ++idx;
-            if (idx == row) {
-                const LogEintrag &e = log[k];
-                switch (i.column()) {
-                case ColZeit: return CsvIo::formatDateTime(e.zeitpunkt);
-                case ColKategorie: {
-                    switch (e.kategorie) {
-                    case LogEintrag::Import: return tr("Import");
-                    case LogEintrag::Validierung: return tr("Validierung");
-                    case LogEintrag::Datei: return tr("Datei");
-                    case LogEintrag::Protokoll: return tr("Protokoll");
-                    case LogEintrag::System: return tr("System");
-                    }
-                    return {};
-                }
-                case ColAuftrag: return e.auftragId;
-                case ColMeldung: return e.meldung;
-                }
-                return {};
-            }
+    const int k = m_index[i.row()];
+    if (k < 0 || k >= log.size()) return {};
+    const LogEntry &e = log[k];
+    switch (i.column()) {
+    case ColTime: return CsvIo::formatDateTime(e.timestamp);
+    case ColCategory: {
+        switch (e.category) {
+        case LogEntry::Import: return tr("Import");
+        case LogEntry::Validation: return tr("Validierung");
+        case LogEntry::File: return tr("Datei");
+        case LogEntry::PrintLog: return tr("Protokoll");
+        case LogEntry::System: return tr("System");
         }
+        return {};
+    }
+    case ColJob: return e.jobId;
+    case ColMessage: return e.message;
     }
     return {};
 }
@@ -398,10 +364,10 @@ QVariant LogModel::headerData(int s, Qt::Orientation o, int role) const
 {
     if (o != Qt::Horizontal || role != Qt::DisplayRole) return {};
     switch (s) {
-    case ColZeit: return tr("Zeitpunkt");
-    case ColKategorie: return tr("Kategorie");
-    case ColAuftrag: return tr("Auftrag");
-    case ColMeldung: return tr("Meldung");
+    case ColTime: return tr("Zeitpunkt");
+    case ColCategory: return tr("Kategorie");
+    case ColJob: return tr("Auftrag");
+    case ColMessage: return tr("Meldung");
     }
     return {};
 }

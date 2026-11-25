@@ -1,8 +1,11 @@
+// Implementierung siehe dialogs.h.
+
 #include "dialogs.h"
 #include "tablemodels.h"
 #include "plotwidget.h"
 #include "regelguete.h"
 #include "analyse.h"
+#include "pidsim.h"
 #include "csvio.h"
 #include <QFormLayout>
 #include <QLabel>
@@ -11,159 +14,170 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QValueAxis>
 #include <QGroupBox>
 #include <QSplitter>
+#include <QListWidget>
 
-// ---------------------------------------------------------------- LoginDialog
 LoginDialog::LoginDialog(QWidget *parent) : QDialog(parent)
 {
     setWindowTitle(tr("Anmelden"));
     auto *form = new QFormLayout(this);
-    m_rolle = new QComboBox(this);
-    m_rolle->addItem(tr("Bediener"), Auth::Bediener);
-    m_rolle->addItem(tr("Technik"), Auth::Technik);
-    m_rolle->addItem(tr("Admin"), Auth::Admin);
+    m_role = new QComboBox(this);
+    m_role->addItem(tr("Bediener"), Auth::Operator);
+    m_role->addItem(tr("Technik"), Auth::Engineer);
+    m_role->addItem(tr("Admin"), Auth::Admin);
     m_name = new QLineEdit(this);
-    m_passwort = new QLineEdit(this);
-    m_passwort->setEchoMode(QLineEdit::Password);
-    form->addRow(tr("Rolle:"), m_rolle);
+    m_password = new QLineEdit(this);
+    m_password->setEchoMode(QLineEdit::Password);
+    form->addRow(tr("Rolle:"), m_role);
     form->addRow(tr("Name:"), m_name);
-    form->addRow(tr("Passwort:"), m_passwort);
+    form->addRow(tr("Passwort:"), m_password);
     auto *btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(btns, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(btns, &QDialogButtonBox::rejected, this, &QDialog::reject);
     form->addRow(btns);
 }
-Auth::Rolle LoginDialog::ausgewaehlteRolle() const
-{ return static_cast<Auth::Rolle>(m_rolle->currentData().toInt()); }
+Auth::Role LoginDialog::selectedRole() const
+{ return static_cast<Auth::Role>(m_role->currentData().toInt()); }
 QString LoginDialog::name() const { return m_name->text().trimmed(); }
-QString LoginDialog::passwort() const { return m_passwort->text(); }
+QString LoginDialog::password() const { return m_password->text(); }
 
-// ---------------------------------------------------------------- DruckerDetailDialog
-DruckerDetailDialog::DruckerDetailDialog(const Drucker &d, const DataStore *store,
+PrinterDetailDialog::PrinterDetailDialog(const Printer &d, const DataStore *store,
                                          ProtocolLoader *loader, QWidget *parent)
-    : QDialog(parent), m_store(store), m_loader(loader), m_druckerId(d.druckerId)
+    : QDialog(parent), m_store(store), m_loader(loader), m_printerId(d.printerId)
 {
-    setWindowTitle(tr("Drucker %1").arg(d.druckerId));
+    setWindowTitle(tr("Drucker %1").arg(d.printerId));
     resize(900, 600);
     auto *layout = new QVBoxLayout(this);
-    m_stammdaten = new QLabel(this);
-    m_stammdaten->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    layout->addWidget(m_stammdaten);
+    m_masterDataLabel = new QLabel(this);
+    m_masterDataLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    layout->addWidget(m_masterDataLabel);
 
-    const Modell *m = store->modell(d.modellId);
-    // Nutzdaten aus den CSVs vor HTML-Rendering escapen (CWE-79)
+    const DeviceModel *m = store->model(d.modelId);
+
     QString text = tr("<b>%1</b> - Modell: %2 (%3, %4) | Standort: %5 | Inbetriebnahme: %6 | "
                       "Betriebsstunden: %7 | Düse: %8 mm | Firmware: %9 | PID: Kp=%10 Ki=%11 Kd=%12 | Status: %13")
-        .arg(d.druckerId.toHtmlEscaped(), m ? m->bezeichnung.toHtmlEscaped() : tr("unbekannt"),
-             m ? m->hersteller.toHtmlEscaped() : QString(), m ? m->kinematik.toHtmlEscaped() : QString(),
-             d.standort.toHtmlEscaped(), CsvIo::formatDate(d.inbetriebnahme))
-        .arg(qRound64(d.betriebsstunden)).arg(qRound64(d.dueseMm)).arg(d.firmware.toHtmlEscaped())
+        .arg(d.printerId.toHtmlEscaped(), m ? m->description.toHtmlEscaped() : tr("unbekannt"),
+             m ? m->manufacturer.toHtmlEscaped() : QString(), m ? m->kinematics.toHtmlEscaped() : QString(),
+             d.location.toHtmlEscaped(), CsvIo::formatDate(d.commissionedOn))
+        .arg(qRound64(d.operatingHours)).arg(qRound64(d.nozzleMm)).arg(d.firmware.toHtmlEscaped())
         .arg(qRound64(d.pidKp)).arg(qRound64(d.pidKi)).arg(qRound64(d.pidKd)).arg(d.status.toHtmlEscaped());
     if (m)
         text += tr("<br>Bauraum: %1×%2×%3 mm | max. Düse %4 °C | max. Bett %5 °C")
-                    .arg(qRound64(m->bauraumXMm)).arg(qRound64(m->bauraumYMm)).arg(qRound64(m->bauraumZMm))
-                    .arg(qRound64(m->maxDueseTempC)).arg(qRound64(m->maxBettTempC));
-    m_stammdaten->setText(text);
+                    .arg(qRound64(m->buildXMm)).arg(qRound64(m->buildYMm)).arg(qRound64(m->buildZMm))
+                    .arg(qRound64(m->maxNozzleTempC)).arg(qRound64(m->maxBedTempC));
+    m_masterDataLabel->setText(text);
 
     auto *splitter = new QSplitter(Qt::Vertical, this);
-    m_model = new AuftragModel(store, this);
-    m_model->setNurDrucker(d.druckerId);
-    m_auftraegeView = new QTableView(this);
-    m_auftraegeView->setAlternatingRowColors(true);   // Zebra-Muster (Farben via Stylesheet)
-    m_auftraegeView->setModel(m_model);
-    m_auftraegeView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    m_auftraegeView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    connect(m_auftraegeView, &QTableView::clicked, this, [this](const QModelIndex &idx) {
-        if (const Auftrag *a = m_model->auftragAt(idx.row())) zeigeAuftrag(*a);
+    m_model = new JobModel(store, this);
+    m_model->setPrinterOnly(d.printerId);
+    m_jobsView = new QTableView(this);
+    m_jobsView->setAlternatingRowColors(true);
+    m_jobsView->setModel(m_model);
+    m_jobsView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_jobsView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    connect(m_jobsView, &QTableView::clicked, this, [this](const QModelIndex &idx) {
+        if (const Job *a = m_model->jobAtRow(idx.row())) showJob(*a);
     });
-    splitter->addWidget(m_auftraegeView);
+    splitter->addWidget(m_jobsView);
+
+    auto *maintenanceBox = new QGroupBox(tr("Wartungen"), this);
+    auto *wl = new QVBoxLayout(maintenanceBox);
+    m_maintenanceModel = new MaintenanceModel(store, maintenanceBox);
+    m_maintenanceModel->setPrinterOnly(d.printerId);
+    m_maintenancesView = new QTableView(maintenanceBox);
+    m_maintenancesView->setAlternatingRowColors(true);
+    m_maintenancesView->setModel(m_maintenanceModel);
+    m_maintenancesView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_maintenancesView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    wl->addWidget(m_maintenancesView);
+    splitter->addWidget(maintenanceBox);
 
     auto *unten = new QSplitter(Qt::Horizontal, this);
     m_plot = new PlotWidget(unten);
     auto *rechts = new QWidget(unten);
     auto *rl = new QVBoxLayout(rechts);
-    m_regelguete = new QLabel(rechts);
-    m_befunde = new QLabel(rechts);
-    m_befunde->setWordWrap(true);
-    rl->addWidget(m_regelguete);
-    rl->addWidget(m_befunde);
+    m_qualityLabel = new QLabel(rechts);
+    m_findingsLabel = new QLabel(rechts);
+    m_findingsLabel->setWordWrap(true);
+    rl->addWidget(m_qualityLabel);
+    rl->addWidget(m_findingsLabel);
     unten->addWidget(m_plot);
     unten->addWidget(rechts);
     splitter->addWidget(unten);
     layout->addWidget(splitter);
-    m_plot->leeren();
+    m_plot->clear();
 
-    // Protokolle im Hintergrund vorladen (LRU-Cache)
-    for (const auto &a : store->auftraegeOfDrucker(d.druckerId)) {
-        if (a.ergebnis != QLatin1String("ausstehend") && !loader->cached(a.auftragId))
-            loader->loadAsync(a.auftragId);
+    for (const auto &a : store->jobsOfPrinter(d.printerId)) {
+        if (a.jobResult != QLatin1String("ausstehend") && !loader->isCached(a.jobId))
+            loader->loadAsync(a.jobId);
     }
     connect(loader, &ProtocolLoader::fertig, this, [this](const QString &) {
-        // Cache aktualisiert; Anzeige aktualisiert sich beim nächsten Doppelklick
+
     });
 }
 
-void DruckerDetailDialog::zeigeAuftrag(const Auftrag &a)
+void PrinterDetailDialog::showJob(const Job &a)
 {
-    if (a.ergebnis == QLatin1String("ausstehend")) {
-        m_plot->leeren();
-        m_regelguete->setText(tr("Auftrag %1 ist geplant - noch kein Protokoll vorhanden.").arg(a.auftragId));
-        m_befunde->clear();
+    if (a.jobResult == QLatin1String("ausstehend")) {
+        m_plot->clear();
+        m_qualityLabel->setText(tr("Auftrag %1 ist geplant - noch kein Protokoll vorhanden.").arg(a.jobId));
+        m_findingsLabel->clear();
         return;
     }
-    const Protokoll p = m_loader->load(a.auftragId);
+    const PrintLog p = m_loader->load(a.jobId);
     if (!p.valid) {
-        m_plot->leeren();
-        m_regelguete->setText(tr("Protokoll nicht verfügbar: %1").arg(p.fehler.toHtmlEscaped()));
-        m_befunde->clear();
+        m_plot->clear();
+        m_qualityLabel->setText(tr("Protokoll nicht verfügbar: %1").arg(p.error.toHtmlEscaped()));
+        m_findingsLabel->clear();
         return;
     }
-    m_plot->zeigeProtokoll(p);
-    const Regelguete rg = RegelgueteRechner::werteAus(p.aufheizen, p.druck, p.dueseSollC);
+    m_plot->showProtocol(p);
+    const ControlQuality rg = ControlQualityCalculator::computeValues(p.heatUp, p.printPhase, p.nozzleTargetC);
     QString t;
-    if (rg.verfuegbar) {
+    if (rg.available) {
         t = tr("Regelgüte %1:<br>Anstiegszeit: %2 s<br>Überschwingen: %3 K (%4 %)<br>"
                "Ausregelzeit: %5<br Mittlere Abweichung Druck: %6 K<br>Maximale Abweichung: %7 K")
-            .arg(a.auftragId.toHtmlEscaped()).arg(qRound64(rg.anstiegszeitS)).arg(qRound64(rg.ueberschwingenK))
-            .arg(qRound64(rg.ueberschwingenProzent))
-            .arg(rg.ausgeregelt ? QString::number(rg.ausregelzeitS, 'f', 1) + QStringLiteral(" s")
+            .arg(a.jobId.toHtmlEscaped()).arg(qRound64(rg.riseTimeS)).arg(qRound64(rg.overshootK))
+            .arg(qRound64(rg.overshootPercent))
+            .arg(rg.settled ? QString::number(rg.settlingTimeS, 'f', 1) + QStringLiteral(" s")
                                 : tr("nicht ausgeregelt"))
-            .arg(qRound64(rg.mittlereAbweichungK)).arg(qRound64(rg.maximaleAbweichungK));
-        if (!rg.bemerkung.isEmpty())
-            t += QStringLiteral("<br>%1").arg(rg.bemerkung);
+            .arg(qRound64(rg.meanDeviationK)).arg(qRound64(rg.maxDeviationK));
+        if (!rg.note.isEmpty())
+            t += QStringLiteral("<br>%1").arg(rg.note);
     } else {
-        t = tr("Regelgüte nicht berechenbar für %1").arg(a.auftragId.toHtmlEscaped());
+        t = tr("Regelgüte nicht berechenbar für %1").arg(a.jobId.toHtmlEscaped());
     }
-    m_regelguete->setText(t);
-    const auto bef = Fehlererkennung::analysiere(p, rg, m_store->material(a.materialId));
+    m_qualityLabel->setText(t);
+    const auto bef = ErrorDetection::detectFaults(p, rg, m_store->material(a.materialId));
     QStringList fb;
-    if (bef.schlechtEingestellt)
+    if (bef.poorlyTuned)
         fb.append(tr("Regler schlecht eingestellt (Überschwingen/Ausregelzeit prüfen)"));
-    fb.append(bef.fehlerbilder);
-    m_befunde->setText(fb.isEmpty() ? tr("Keine Fehlerbilder erkannt.")
+    fb.append(bef.errorPatterns);
+    m_findingsLabel->setText(fb.isEmpty() ? tr("Keine Fehlerbilder erkannt.")
                                      : fb.join(QStringLiteral("<br>")));
 }
 
-// ---------------------------------------------------------------- DruckerEditDialog
-DruckerEditDialog::DruckerEditDialog(const Drucker &d, QWidget *parent) : QDialog(parent)
-    , m_druckerId(d.druckerId)
+PrinterEditDialog::PrinterEditDialog(const Printer &d, QWidget *parent) : QDialog(parent)
+    , m_printerId(d.printerId)
 {
-    setWindowTitle(tr("Stammdaten bearbeiten: %1").arg(d.druckerId));
+    setWindowTitle(tr("Stammdaten bearbeiten: %1").arg(d.printerId));
     auto *form = new QFormLayout(this);
-    m_standort = new QLineEdit(d.standort, this);
+    m_locationEdit = new QLineEdit(d.location, this);
     m_status = new QComboBox(this);
     m_status->addItems({QStringLiteral("bereit"), QStringLiteral("druckt"),
                         QStringLiteral("wartung"), QStringLiteral("defekt")});
     if (m_status->findText(d.status) < 0)
-        m_status->addItem(d.status);   // unbekannten Status aus den Daten uebernehmen statt verwerfen
+        m_status->addItem(d.status);
     m_status->setCurrentText(d.status);
     m_kp = new QLineEdit(QString::number(d.pidKp), this);
     m_ki = new QLineEdit(QString::number(d.pidKi), this);
     m_kd = new QLineEdit(QString::number(d.pidKd), this);
-    form->addRow(tr("Standort:"), m_standort);
+    form->addRow(tr("Standort:"), m_locationEdit);
     form->addRow(tr("Status:"), m_status);
     form->addRow(tr("PID Kp:"), m_kp);
     form->addRow(tr("PID Ki:"), m_ki);
@@ -174,107 +188,209 @@ DruckerEditDialog::DruckerEditDialog(const Drucker &d, QWidget *parent) : QDialo
     form->addRow(btns);
 }
 
-Drucker DruckerEditDialog::ergebnis() const
+Printer PrinterEditDialog::editedPrinter() const
 {
-    Drucker d;
-    d.druckerId = m_druckerId;
-    d.standort = m_standort->text().trimmed();
+    Printer d;
+    d.printerId = m_printerId;
+    d.location = m_locationEdit->text().trimmed();
     d.status = m_status->currentText();
     bool okKp = false, okKi = false, okKd = false;
     d.pidKp = m_kp->text().toDouble(&okKp);
     d.pidKi = m_ki->text().toDouble(&okKi);
     d.pidKd = m_kd->text().toDouble(&okKd);
-    const_cast<DruckerEditDialog*>(this)->m_gueltig = okKp && okKi && okKd;
+    const_cast<PrinterEditDialog*>(this)->m_gueltig = okKp && okKi && okKd;
     return d;
 }
 
-// ---------------------------------------------------------------- PidSimDialog
-PidSimDialog::PidSimDialog(const Drucker &d, QWidget *parent) : QDialog(parent)
+PidSimDialog::PidSimDialog(const Printer &d, const DataStore *store,
+                           ProtocolLoader *loader, QWidget *parent)
+    : QDialog(parent), m_modelId(d.modelId), m_printerId(d.printerId),
+      m_store(store), m_loader(loader)
 {
-    setWindowTitle(tr("PID-Simulation: %1").arg(d.druckerId));
-    resize(800, 500);
+    setWindowTitle(tr("PID-Simulation: %1").arg(d.printerId));
+    resize(900, 650);
     auto *layout = new QVBoxLayout(this);
     auto *form = new QFormLayout();
     m_kp = new QLineEdit(QString::number(d.pidKp), this);
     m_ki = new QLineEdit(QString::number(d.pidKi), this);
     m_kd = new QLineEdit(QString::number(d.pidKd), this);
-    m_tsoll = new QLineEdit(QStringLiteral("210"), this);
+    m_targetTemp = new QLineEdit(QStringLiteral("210"), this);
     form->addRow(tr("Kp:"), m_kp);
     form->addRow(tr("Ki:"), m_ki);
     form->addRow(tr("Kd:"), m_kd);
-    form->addRow(tr("Solltemperatur [°C]:"), m_tsoll);
+    form->addRow(tr("Solltemperatur [°C]:"), m_targetTemp);
+    m_disturbanceCheck = new QCheckBox(tr("Störgröße: Extrusion (Druckphase nach Aufheizen)"), this);
+    m_noiseCheck = new QCheckBox(tr("Störgröße: Fühlerrauschen ±0,15 K"), this);
+    m_fanCheck = new QCheckBox(tr("Störgröße: Lüfter 100 % (Konvektion)"), this);
+    m_fit = new QCheckBox(tr("Strecke aus letztem echten Aufheizprotokoll dieses Druckers fitten"), this);
+    form->addRow(m_disturbanceCheck);
+    form->addRow(m_noiseCheck);
+    form->addRow(m_fanCheck);
+    form->addRow(m_fit);
+    connect(m_disturbanceCheck, &QCheckBox::toggled, this, &PidSimDialog::startSimulation);
+    connect(m_noiseCheck, &QCheckBox::toggled, this, &PidSimDialog::startSimulation);
+    connect(m_fanCheck, &QCheckBox::toggled, this, &PidSimDialog::startSimulation);
+    connect(m_fit, &QCheckBox::toggled, this, &PidSimDialog::startSimulation);
     auto *btn = new QPushButton(tr("Simulieren"), this);
-    connect(btn, &QPushButton::clicked, this, &PidSimDialog::simuliere);
+    connect(btn, &QPushButton::clicked, this, &PidSimDialog::startSimulation);
     form->addRow(btn);
     layout->addLayout(form);
-    m_plot = new PlotWidget(this);
-    layout->addWidget(m_plot);
-    m_ergebnis = new QLabel(this);
-    layout->addWidget(m_ergebnis);
-    simuliere();
+
+    auto *unten = new QSplitter(Qt::Horizontal, this);
+    m_plot = new PlotWidget(unten);
+    auto *rechts = new QWidget(unten);
+    auto *rl = new QVBoxLayout(rechts);
+    auto *rankTitle = new QLabel(tr("Rangliste (beste zuerst):"), rechts);
+    m_rankingList = new QListWidget(rechts);
+    rl->addWidget(rankTitle);
+    rl->addWidget(m_rankingList);
+    unten->addWidget(m_plot);
+    unten->addWidget(rechts);
+    layout->addWidget(unten, 1);
+    m_resultLabel = new QLabel(this);
+    m_resultLabel->setWordWrap(true);
+    layout->addWidget(m_resultLabel);
+    startSimulation();
 }
 
-void PidSimDialog::simuliere()
+// Strecke: Modell-Preset, optional Fit aus dem neuesten echten Aufheizprotokoll
+// dieses Druckers (Fallback kommentiert im Label).
+PidSim::Options PidSimDialog::resolvePlantOptions(QString &info) const
 {
-    const double tsoll = m_tsoll->text().toDouble();
-    const auto erg = PidSim::simuliere(m_kp->text().toDouble(), m_ki->text().toDouble(),
-                                       m_kd->text().toDouble(), tsoll, 24.0);
-    QVector<Messpunkt> punkte;
-    for (int i = 0; i < erg.zeitS.size(); ++i)
-        punkte.append({erg.zeitS[i], erg.istC[i], 0, 0, 0, 0, 0, 0});
-    m_plot->zeigeVergleich({{tr("Simulierte Sprungantwort"), punkte}});
-    m_ergebnis->setText(tr("Simuliert: Anstiegszeit %1 s, Überschwingen %2 K")
-                            .arg(qRound64(erg.anstiegszeitS)).arg(qRound64(erg.ueberschwingenK)));
+    PidSim::Options opt = PidSim::plantPresetForModel(m_modelId);
+    info = tr("Strecke: Modell-Preset (kein Protokoll gefunden).");
+    if (!m_fit->isChecked() || !m_store || !m_loader)
+        return opt;
+
+    const Job *latest = nullptr;
+    for (const auto &a : m_store->jobsOfPrinter(m_printerId)) {
+        if (a.jobResult == QLatin1String("ausstehend") || !a.ende.isValid()) continue;
+        if (m_loader->pathForJob(a.jobId).isEmpty()) continue;
+        if (!latest || a.ende > latest->ende) latest = &a;
+    }
+    if (!latest)
+        return opt;
+    const PrintLog p = m_loader->load(latest->jobId);
+    if (!p.valid)
+        return opt;
+    const auto fit = PidSim::fitPlantFromHeatUp(p.heatUp, p.nozzleTargetC, opt);
+    info = tr("Strecke aus Protokoll %1 gefitten (SSE %2).")
+               .arg(latest->jobId).arg(QString::number(fit.sse, 'f', 1));
+    return fit.opt;
 }
 
-// ---------------------------------------------------------------- BerichtDialog
-BerichtDialog::BerichtDialog(const DataStore *store, QWidget *parent)
+static QVector<Sample> curveFromResult(const PidSim::Result &res, bool output)
+{
+    QVector<Sample> punkte;
+    punkte.reserve(res.timeS.size());
+    for (int j = 0; j < res.timeS.size(); ++j)
+        punkte.append({res.timeS[j], output ? res.outputPercent[j] : res.actualC[j],
+                       0, 0, 0, 0, 0, 0});
+    return punkte;
+}
+
+void PidSimDialog::displayRanking(const QList<PidSim::RankEntry> &ranking, const QString &plantInfo)
+{
+    QList<QPair<QString, QVector<Sample>>> curves;
+    for (int i = 0; i < ranking.size(); ++i)
+        curves.append({tr("Rang %1: Kp=%2 Ki=%3 Kd=%4").arg(i + 1).arg(ranking[i].kp).arg(ranking[i].ki).arg(ranking[i].kd),
+                       curveFromResult(ranking[i].res, false)});
+    if (!ranking.isEmpty())
+        curves.append({tr("Stellgröße u [%] (Rang 1)"), curveFromResult(ranking.first().res, true)});
+    m_plot->showComparison(curves);
+    if (auto *ay = qobject_cast<QValueAxis*>(m_plot->chart()->axes(Qt::Vertical).first()))
+        ay->setTitleText(tr("Temperatur [°C] / u [%]"));
+
+    auto settlingText = [this](const PidSim::Result &e) {
+        return e.settlingTimeS >= 0
+                ? QString::number(e.settlingTimeS, 'f', 1) + QStringLiteral(" s")
+                : tr("nicht ausgeregelt");
+    };
+    m_rankingList->clear();
+    for (int i = 0; i < ranking.size(); ++i)
+        m_rankingList->addItem(tr("%1. Kp=%2 Ki=%3 Kd=%4 – Ausregelzeit %5, Überschwingen %6 K")
+                                 .arg(i + 1).arg(ranking[i].kp).arg(ranking[i].ki).arg(ranking[i].kd)
+                                 .arg(settlingText(ranking[i].res))
+                                 .arg(QString::number(ranking[i].res.overshootK, 'f', 1)));
+    if (!ranking.isEmpty()) {
+        const auto &best = ranking.first();
+        m_resultLabel->setText(tr("Simuliert: Anstiegszeit %1 s, Überschwingen %2 K, Ausregelzeit %3 s")
+                                .arg(QString::number(best.res.riseTimeS, 'f', 1))
+                                .arg(QString::number(best.res.overshootK, 'f', 1))
+                                .arg(settlingText(best.res))
+                            + QStringLiteral("<br>%1").arg(plantInfo));
+    }
+}
+
+void PidSimDialog::startSimulation()
+{
+    const double targetC = m_targetTemp->text().toDouble();
+    const double kp = m_kp->text().toDouble();
+    const double ki = m_ki->text().toDouble();
+    const double kd = m_kd->text().toDouble();
+    QString plantInfo;
+    PidSim::Options opt = resolvePlantOptions(plantInfo);
+    opt.printPhaseDisturbance = m_disturbanceCheck->isChecked();
+    opt.sensorNoise = m_noiseCheck->isChecked();
+    opt.fanPercent = m_fanCheck->isChecked() ? 100.0 : 0.0;
+
+    const auto ranking = PidSim::rankParameterCandidates(PidSim::varyParametersAround(kp, ki, kd), targetC, 24.0, opt);
+    displayRanking(ranking, plantInfo);
+}
+
+ReportDialog::ReportDialog(const DataStore *store, QWidget *parent)
     : QDialog(parent), m_store(store)
 {
     setWindowTitle(tr("Bericht exportieren"));
     auto *layout = new QVBoxLayout(this);
     auto *form = new QFormLayout();
-    m_typ = new QComboBox(this);
-    m_typ->addItem(tr("Wochenbericht Druckerfarm (CSV)"), 0);
-    m_typ->addItem(tr("Kostenübersicht je Auftrag (CSV)"), 1);
-    m_typ->addItem(tr("Wartungsplan (CSV)"), 2);
-    form->addRow(tr("Bericht:"), m_typ);
+    m_type = new QComboBox(this);
+    m_type->addItem(tr("Wochenbericht Druckerfarm (CSV)"), 0);
+    m_type->addItem(tr("Kostenübersicht je Auftrag (CSV)"), 1);
+    m_type->addItem(tr("Wartungsplan (CSV)"), 2);
+    form->addRow(tr("Bericht:"), m_type);
     auto *btn = new QPushButton(tr("Exportieren..."), this);
-    connect(btn, &QPushButton::clicked, this, &BerichtDialog::exportiere);
+    connect(btn, &QPushButton::clicked, this, &ReportDialog::exportReport);
     form->addRow(btn);
     layout->addLayout(form);
 }
 
-void BerichtDialog::exportiere()
+void ReportDialog::exportReport()
 {
+
+    if (!Auth::mayExport()) {
+        m_store->log(LogEntry::System, tr("Export verweigert (nicht angemeldet): Bericht-Export"));
+        QMessageBox::information(this, tr("Rechte"), tr("Bitte zuerst anmelden."));
+        return;
+    }
     const QString path = QFileDialog::getSaveFileName(this, tr("Bericht speichern"),
                                                       QStringLiteral("bericht.csv"), tr("CSV (*.csv)"));
     if (path.isEmpty()) return;
     QList<QStringList> rows;
-    const int typ = m_typ->currentData().toInt();
-    if (typ == 0) {
+    const int type = m_type->currentData().toInt();
+    if (type == 0) {
         rows.append({tr("drucker_id"), tr("erfolgsquote"), tr("filament_g"), tr("materialkosten_eur")});
-        for (const auto &d : m_store->drucker()) {
-            const double q = m_store->erfolgsquoteDrucker(d.druckerId);
-            rows.append({d.druckerId, q < 0 ? QStringLiteral("-") : QString::number(q, 'f', 3),
-                         QString::number(m_store->filamentverbrauchG(d.druckerId), 'f', 1),
-                         QString::number(m_store->materialkostenEur(d.druckerId), 'f', 2)});
+        for (const auto &d : m_store->printer()) {
+            const double q = m_store->successRateOfPrinter(d.printerId);
+            rows.append({d.printerId, q < 0 ? QStringLiteral("-") : QString::number(q, 'f', 3),
+                         QString::number(m_store->filamentUsedGrams(d.printerId), 'f', 1),
+                         QString::number(m_store->materialCostEur(d.printerId), 'f', 2)});
         }
-    } else if (typ == 1) {
+    } else if (type == 1) {
         rows.append({tr("auftrag_id"), tr("drucker_id"), tr("material_eur"), tr("maschinen_eur"), tr("gesamt_eur")});
         for (const auto &a : m_store->auftraege()) {
-            const auto k = Kostenrechnung::auftrag(a, m_store->material(a.materialId));
-            rows.append({a.auftragId, a.druckerId, QString::number(k.materialEur, 'f', 2),
+            const auto k = CostCalculator::computeJobCost(a, m_store->material(a.materialId));
+            rows.append({a.jobId, a.printerId, QString::number(k.materialEur, 'f', 2),
                          QString::number(k.maschinenEur, 'f', 2), QString::number(k.gesamtEur, 'f', 2)});
         }
     } else {
         rows.append({tr("wartung_id"), tr("drucker_id"), tr("datum"), tr("art"), tr("dauer_min"), tr("bemerkung")});
-        for (const auto &w : m_store->wartungen())
-            rows.append({w.wartungId, w.druckerId, CsvIo::formatDate(w.datum), w.art,
-                         QString::number(w.dauerMin), w.bemerkung});
+        for (const auto &w : m_store->maintenances())
+            rows.append({w.maintenanceId, w.printerId, CsvIo::formatDate(w.date), w.kind,
+                         QString::number(w.durationMin), w.note});
     }
     QString err;
-    if (CsvIo::write(path, rows, &err))
+    if (CsvIo::writeCsv(path, rows, &err))
         QMessageBox::information(this, tr("Export"), tr("Bericht geschrieben: %1").arg(path));
     else
         QMessageBox::warning(this, tr("Export"), err);

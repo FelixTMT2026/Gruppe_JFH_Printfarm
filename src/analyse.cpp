@@ -1,139 +1,138 @@
-#include "analyse.h"
-#include "regelguete.h"
-#include <QtMath>
+// Implementierung der Fachlogik siehe analyse.h.
 
-Fehlererkennung::Befunde Fehlererkennung::analysiere(const Protokoll &p, const Regelguete &rg,
+#include "analyse.h"
+#include <QtMath>
+#include <algorithm>
+
+static constexpr double kOvershootBadK = 5.0;
+static constexpr double kSustainedOscillationAmpK = 2.0;
+static constexpr double kSettlingTimeBadS = 300.0;
+static constexpr double kCurrentRiseFactor = 1.5;
+static constexpr double kCurrentRiseAbsA = 0.2;
+static constexpr double kHeaterFullPowerPercent = 95.0;
+static constexpr double kHeaterMinRiseK = 2.0;
+static constexpr double kSensorNoiseK = 1.5;
+static constexpr double kBedDeviationK = 10.0;
+
+// Regelbasierte Heuristiken mit dokumentierten Schwellen (Konstanten oben);
+// keine physikalische Diagnose, sondern Auffaelligkeiten im Protokoll.
+ErrorDetection::Findings ErrorDetection::detectFaults(const PrintLog &p, const ControlQuality &rg,
                                                       const Material *material)
 {
-    Befunde b;
-    // Schlecht eingestellter Regler: großes Überschwingen (> 5 K), Dauerschwingung
-    // (Amplitude am Ende der Aufheizphase > 2 K) oder sehr lange Ausregelzeit.
-    if (rg.verfuegbar) {
-        bool dauerschwingung = false;
-        if (p.aufheizen.size() >= 20) {
-            const int n = p.aufheizen.size();
-            double amp = qAbs(p.aufheizen[n - 1].dueseIstC - p.aufheizen[n - 11].dueseIstC);
-            dauerschwingung = amp > 2.0;
+    Findings b;
+
+    if (rg.available) {
+        bool sustainedOscillation = false;
+        if (p.heatUp.size() >= 20) {
+            const int n = p.heatUp.size();
+            const int m = qMax(2, n / 10);
+            const double amp = qAbs(p.heatUp[n - 1].nozzleActualC - p.heatUp[n - 1 - m].nozzleActualC);
+            sustainedOscillation = amp > kSustainedOscillationAmpK;
         }
-        if (rg.ueberschwingenK > 5.0 || dauerschwingung || (!rg.ausgeregelt) || rg.ausregelzeitS > 300)
-            b.schlechtEingestellt = true;
+        if (rg.overshootK > kOvershootBadK || sustainedOscillation ||
+            (!rg.settled) || rg.settlingTimeS > kSettlingTimeBadS)
+            b.poorlyTuned = true;
     }
-    // Düse verstopft: Extruderstrom steigt in der Druckphase kontinuierlich an.
-    if (p.druck.size() >= 20) {
-        const int n = p.druck.size();
-        const double anfang = p.druck[n / 4].extruderStromA;
-        const double ende = p.druck[n - 1].extruderStromA;
-        if (ende > anfang * 1.5 && ende - anfang > 0.2)
-            b.fehlerbilder.append(QStringLiteral("Düse vermutlich verstopft (steigender Extruderstrom)"));
+
+    if (p.printPhase.size() >= 20) {
+        const int n = p.printPhase.size();
+        const double anfang = p.printPhase[n / 4].extruderCurrentA;
+        const double ende = p.printPhase[n - 1].extruderCurrentA;
+        if (ende > anfang * kCurrentRiseFactor && ende - anfang > kCurrentRiseAbsA)
+            b.errorPatterns.append(QStringLiteral("Düse vermutlich verstopft (steigender Extruderstrom)"));
     }
-    // Heizung ausgefallen: volle Heizleistung ohne Temperaturanstieg in der Aufheizphase.
-    if (p.aufheizen.size() >= 30) {
+
+    if (p.heatUp.size() >= 30) {
+        const int n = p.heatUp.size();
+        const int i0 = qMax(1, n / 10);
+        const int i1 = qMax(i0 + 2, n / 3);
         bool volleLeistung = true;
-        double anstieg = 0;
-        for (int i = 10; i < 30; ++i) {
-            if (p.aufheizen[i].heizleistungProzent < 95) volleLeistung = false;
-            anstieg = p.aufheizen[i].dueseIstC - p.aufheizen[10].dueseIstC;
+        double rise = 0;
+        for (int i = i0; i < i1; ++i) {
+            if (p.heatUp[i].heaterPercent < kHeaterFullPowerPercent) volleLeistung = false;
+            rise = p.heatUp[i].nozzleActualC - p.heatUp[i0].nozzleActualC;
         }
-        if (volleLeistung && anstieg < 2.0)
-            b.fehlerbilder.append(QStringLiteral("Heizung vermutlich ausgefallen (volle Leistung ohne Temperaturanstieg)"));
+        if (volleLeistung && rise < kHeaterMinRiseK)
+            b.errorPatterns.append(QStringLiteral("Heizung vermutlich ausgefallen (volle Leistung ohne Temperaturanstieg)"));
     }
-    // Verrauschter Temperaturfühler: starke hochfrequente Schwankungen.
-    if (p.druck.size() >= 20) {
-        double rauschen = 0;
-        for (int i = 2; i < p.druck.size(); ++i)
-            rauschen += qAbs(p.druck[i].dueseIstC - p.druck[i - 1].dueseIstC);
-        if (rauschen / (p.druck.size() - 2) > 1.5)
-            b.fehlerbilder.append(QStringLiteral("Temperaturfühler verrauscht (starkes Messrauschen)"));
+
+    if (p.printPhase.size() >= 20) {
+        double noise = 0;
+        for (int i = 2; i < p.printPhase.size(); ++i)
+            noise += qAbs(p.printPhase[i].nozzleActualC - p.printPhase[i - 1].nozzleActualC);
+        if (noise / (p.printPhase.size() - 2) > kSensorNoiseK)
+            b.errorPatterns.append(QStringLiteral("Temperaturfühler verrauscht (starkes Messrauschen)"));
     }
-    // Unpassende Betttemperatur zum Material.
-    if (material && qAbs(p.bettSollC - material->bettTempC) > 10)
-        b.fehlerbilder.append(QStringLiteral("Betttemperatur weicht stark von Materialempfehlung ab (%.0f vs. %.0f °C)")
-                               .arg(p.bettSollC).arg(material->bettTempC));
+
+    if (material && qAbs(p.bedTargetC - material->bedTempC) > kBedDeviationK)
+        b.errorPatterns.append(QStringLiteral("Betttemperatur weicht stark von Materialempfehlung ab (%1 vs. %2 °C)")
+                               .arg(p.bedTargetC).arg(material->bedTempC));
     return b;
 }
 
-Kostenrechnung::Ergebnis Kostenrechnung::auftrag(const Auftrag &a, const Material *mat,
+CostCalculator::Result CostCalculator::computeJobCost(const Job &a, const Material *mat,
                                                   double stundensatzEur)
 {
-    Ergebnis e;
+    Result e;
     if (mat)
-        e.materialEur = a.filamentSollG / 1000.0 * mat->preisEurKg;
-    double dauerMin = a.dauerSollMin;
+        e.materialEur = a.plannedFilamentG / 1000.0 * mat->priceEurKg;
+    double durationMin = a.plannedMinutes;
     if (a.start.isValid() && a.ende.isValid())
-        dauerMin = a.start.secsTo(a.ende) / 60.0;
-    e.maschinenEur = dauerMin / 60.0 * stundensatzEur;
+        durationMin = a.start.secsTo(a.ende) / 60.0;
+    e.maschinenEur = durationMin / 60.0 * stundensatzEur;
     e.gesamtEur = e.materialEur + e.maschinenEur;
     return e;
 }
 
-QList<Planung::Zuweisung> Planung::greedy(const QList<Auftrag> &ausstehend,
-                                          const QList<Drucker> &drucker,
+QList<Planning::Assignment> Planning::assignJobsGreedy(const QList<Job> &pending,
+                                          const QList<Printer> &printer,
                                           const DataStore &store,
-                                          const QDateTime &startZeit)
+                                          const QDateTime &startTime)
 {
-    QList<Zuweisung> out;
-    // Belegung je Drucker (Start mit startZeit)
+    QList<Assignment> out;
+
     QHash<QString, QDateTime> freiAb;
-    for (const auto &d : drucker)
-        freiAb.insert(d.druckerId, startZeit);
-    // Aufträge nach Dauer sortieren (greedy: frühester Fertigstellungszeitpunkt)
-    QList<Auftrag> liste = ausstehend;
-    std::sort(liste.begin(), liste.end(), [](const Auftrag &a, const Auftrag &b) {
-        return a.dauerSollMin < b.dauerSollMin;
+    for (const auto &d : printer)
+        freiAb.insert(d.printerId, startTime);
+    for (const auto &a : store.auftraege()) {
+        if (a.jobResult == QLatin1String("ausstehend") || !a.ende.isValid()) continue;
+        auto it = freiAb.find(a.printerId);
+        if (it != freiAb.end() && a.ende > it.value())
+            it.value() = a.ende;
+    }
+    for (const auto &w : store.maintenances()) {
+
+        const QDateTime barEnd = QDateTime(w.date, QTime(0, 0)).addSecs(qint64(w.durationMin * 60));
+        auto it = freiAb.find(w.printerId);
+        if (it != freiAb.end() && barEnd > it.value())
+            it.value() = barEnd;
+    }
+
+    QList<Job> liste = pending;
+    std::sort(liste.begin(), liste.end(), [](const Job &a, const Job &b) {
+        return a.plannedMinutes < b.plannedMinutes;
     });
     for (const auto &a : liste) {
         const Material *mat = store.material(a.materialId);
         QString bestId;
         QDateTime bestFertig;
-        for (const auto &d : drucker) {
+        for (const auto &d : printer) {
             if (d.status != QLatin1String("bereit")) continue;
-            const Modell *m = store.modell(d.modellId);
+            const DeviceModel *m = store.model(d.modelId);
             if (!m || !mat) continue;
-            if (mat->dueseTempC > m->maxDueseTempC || mat->bettTempC > m->maxBettTempC)
-                continue;   // Material nicht für dieses Modell geeignet
-            const QDateTime von = freiAb.value(d.druckerId);
-            const QDateTime bis = von.addSecs(qint64(a.dauerSollMin * 60));
+            if (mat->nozzleTempC > m->maxNozzleTempC || mat->bedTempC > m->maxBedTempC)
+                continue;
+            const QDateTime von = freiAb.value(d.printerId);
+            const QDateTime bis = von.addSecs(qint64(a.plannedMinutes * 60));
             if (bestId.isEmpty() || bis < bestFertig) {
-                bestId = d.druckerId;
+                bestId = d.printerId;
                 bestFertig = bis;
             }
         }
         if (!bestId.isEmpty()) {
-            out.append({a.auftragId, bestId, freiAb.value(bestId), bestFertig});
+            out.append({a.jobId, bestId, freiAb.value(bestId), bestFertig});
             freiAb.insert(bestId, bestFertig);
         }
     }
     return out;
-}
-
-PidSim::Ergebnis PidSim::simuliere(double kp, double ki, double kd,
-                                   double tsoll, double t0,
-                                   double tauS, double dtS, double dauerS)
-{
-    // Strecke 1. Ordnung: dT/dt = (u/Leistungsklasse - (T - T0))/tau, vereinfacht:
-    // dT/dt = (u * kHeiz - (T - T0)) / tau mit kHeiz so, dass 100 % die Solltemp. hält.
-    Ergebnis e;
-    const double kHeiz = (tsoll - t0) / 100.0;   // 100 % Leistung hält Tsoll (stationär)
-    double T = t0, integral = 0, ePrev = tsoll - t0, t = 0;
-    const int n = int(dauerS / dtS) + 1;
-    e.zeitS.reserve(n);
-    e.istC.reserve(n);
-    double tmax = t0;
-    for (int i = 0; i < n; ++i) {
-        const double err = tsoll - T;
-        integral += err * dtS;
-        const double deriv = (i == 0) ? 0.0 : (err - ePrev) / dtS;
-        double u = kp * err + ki * integral + kd * deriv;
-        u = qBound(0.0, u, 100.0);
-        const double dT = (u * kHeiz - (T - t0)) / tauS * dtS;
-        T += dT;
-        ePrev = err;
-        t = i * dtS;
-        e.zeitS.append(t);
-        e.istC.append(T);
-        tmax = qMax(tmax, T);
-    }
-    e.ueberschwingenK = tmax - tsoll;
-    e.anstiegszeitS = RegelgueteRechner::anstiegszeitS(e.zeitS, e.istC, t0, tsoll);
-    return e;
 }
