@@ -385,3 +385,22 @@ double DataStore::materialkostenEur(const QString &druckerId) const
     }
     return sum;
 }
+
+double DataStore::durchschnWochenverbrauchKg(const QString &materialId) const
+{
+    double gesamtG = 0;
+    QDateTime von, bis;
+    for (const auto &a : m_auftraege) {
+        if (a.ergebnis != QLatin1String("erfolgreich") || !a.start.isValid()) continue;
+        if (a.materialId == materialId)
+            gesamtG += a.filamentSollG;
+        if (!von.isValid() || a.start < von) von = a.start;
+        const QDateTime ende = a.ende.isValid() ? a.ende : a.start;
+        if (!bis.isValid() || ende > bis) bis = ende;
+    }
+    if (gesamtG <= 0 || !von.isValid())
+        return 0.0;
+    // Zeitspanne der Daten in Wochen (mindestens 1 Tag, damit nie durch 0 geteilt wird)
+    const double wochen = qMax(1.0 / 7.0, double(von.date().daysTo(bis.date())) / 7.0);
+    return gesamtG / 1000.0 / wochen;
+}

@@ -27,6 +27,7 @@ FehlerlogWidget::FehlerlogWidget(DataStore *store, QWidget *parent)
 
     m_model = new LogModel(store, this);
     auto *view = new QTableView(this);
+    view->setAlternatingRowColors(true);   // Zebra-Muster (Farben via Stylesheet)
     view->setModel(m_model);
     view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     layout->addWidget(view);

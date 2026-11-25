@@ -9,8 +9,8 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    QApplication::setApplicationName(QStringLiteral("Gruppe_JFH_Printfarm"));
-    QApplication::setOrganizationName(QStringLiteral("JFH"));
+    QApplication::setApplicationName(QStringLiteral("PrintFarm_Gruppe_03"));
+    QApplication::setOrganizationName(QStringLiteral("Gruppe_03"));
     // Zahlen überall mit Punkt als Dezimaltrennzeichen (wie in den CSV-Daten),
     // nicht mit Komma wie in der deutschen System-Locale
     QLocale::setDefault(QLocale::c());

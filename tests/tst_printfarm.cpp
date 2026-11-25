@@ -44,6 +44,7 @@ private slots:
     void regelabweichungNurPausen();
     void utf8Roundtrip();
     void protokollNurAufheizen();
+    void wochenverbrauchProMaterial();
     // --- Security ---
     void pfadTraversalAbgelehnt();
     void csvFormelInjectionGeschuetzt();
@@ -669,6 +670,19 @@ void TestPrintFarm::csvFormelInjectionGeschuetzt()
     QVERIFY(inhalt.contains(QStringLiteral("'-2+3")));
     QVERIFY(inhalt.contains(QStringLiteral("normal")));
     QVERIFY(inhalt.contains(QStringLiteral("\"mit,komma\"")));
+}
+
+void TestPrintFarm::wochenverbrauchProMaterial()
+{
+    const QString dir = schreibeTestdaten();
+    DataStore store;
+    QVERIFY(store.loadFromFolder(dir));
+    // Testdaten: nur J00001 (MAT01, erfolgreich, 30 g) zaehlt; Zeitspanne 1 Tag = 1/7 Woche
+    // -> 0,03 kg / (1/7) = 0,21 kg/Woche
+    const double v = store.durchschnWochenverbrauchKg(QStringLiteral("MAT01"));
+    QVERIFY(qAbs(v - 0.21) < 0.01);
+    // fehlgeschlagen/ausstehend zaehlen nicht, unbekanntes Material = 0
+    QCOMPARE(store.durchschnWochenverbrauchKg(QStringLiteral("UNKNOWN")), 0.0);
 }
 
 QTEST_GUILESS_MAIN(TestPrintFarm)

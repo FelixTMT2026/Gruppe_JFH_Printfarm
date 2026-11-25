@@ -20,7 +20,7 @@ public:
     QString aktuellerAuftrag() const { return m_auftragId; }   // zuletzt gezeichneter Auftrag
 
     // Adaptive X-Achsen-Skalierung: bildet die reale Zeit non-linear auf die
-    // Anzeige-X ab — Bereiche mit starker Änderung werden gestreckt (breiter),
+    // Anzeige-X ab: Bereiche mit starker Änderung werden gestreckt (breiter),
     // stabile Bereiche gestaucht (kürzer). Alle Punkte bleiben erhalten.
     // Rueckgabe: display-x pro Rohpunkt (bei linear: identisch mit realer Zeit).
     static QVector<double> adaptiveZeitachse(const QVector<QPointF> &pts, bool adaptiv);
@@ -28,11 +28,13 @@ protected:
     void resizeEvent(QResizeEvent *e) override;   // bei Skalierung neu decimieren
 private:
     void render();   // zeichnet Rohdaten (adaptiv oder Standard, je nach Toggle)
+    void achsenAnpassen();   // alle Achsen an Plotgroesse anpassen (nie "..."-Labels)
     QString m_auftragId;
+    QList<QPair<QString, double>> m_xLabels;   // vollstaendige X-Labels mit Position (zum Ausduennen)
     QVector<QPointF> m_duesePts, m_bettPts;   // Rohdaten (Zeit in min)
     QVector<QPair<double, QString>> m_events; // (Zeit in min, Name)
     double m_maxTemp = 250.0;
     bool m_rohdaten = false;
-    bool m_adaptiv = true;   // Toggle: adaptive X-Achsen-Skalierung vs. lineare Zeit
+    bool m_adaptiv = false;  // Toggle: adaptive X-Achsen-Skalierung vs. lineare Zeit (Standard: aus)
     class QCheckBox *m_adaptivBox = nullptr;
 };

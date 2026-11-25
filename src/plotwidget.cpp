@@ -1,4 +1,5 @@
 #include "plotwidget.h"
+#include "achseutil.h"
 #include <QChart>
 #include <QValueAxis>
 #include <QLineSeries>
@@ -9,6 +10,8 @@
 
 PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
 {
+    // Mindesthoehe: darunter elidiert Qt die Kategorie-Achsenlabels zu "..."
+    setMinimumHeight(180);
     chart()->setAnimationOptions(QChart::NoAnimation);
     chart()->legend()->setVisible(true);
     chart()->legend()->setAlignment(Qt::AlignBottom | Qt::AlignLeft);   // Legende unten links
@@ -17,13 +20,30 @@ PlotWidget::PlotWidget(QWidget *parent) : QChartView(new QChart(), parent)
     setRenderHint(QPainter::Antialiasing);
 
     // Toggle oben rechts: adaptiv (X-Achsen-Skalierung) vs. Standard (lineare Zeit)
+    // Standard: AUS (lineare Zeitachse)
     m_adaptivBox = new QCheckBox(tr("Adaptiv"), this);
-    m_adaptivBox->setChecked(true);
+    m_adaptivBox->setChecked(false);
     m_adaptivBox->setToolTip(tr("Adaptive X-Achsen-Skalierung umschalten"));
     connect(m_adaptivBox, &QCheckBox::toggled, this, [this](bool on) {
         m_adaptiv = on;
         render();
     });
+    // bei jeder Groessenaenderung alle Achsen neu anpassen (Labels nie "...")
+    connect(chart(), &QChart::plotAreaChanged, this, [this](const QRectF &) { achsenAnpassen(); });
+}
+
+void PlotWidget::achsenAnpassen()
+{
+    const QRectF pa = chart()->plotArea();
+    for (auto *a : chart()->axes(Qt::Horizontal)) {
+        if (auto *cat = qobject_cast<QCategoryAxis*>(a))
+            kategorieAchseAnpassen(cat, m_xLabels, pa.width());
+        else if (auto *val = qobject_cast<QValueAxis*>(a))
+            werteAchseAnpassen(val, pa.height());
+    }
+    for (auto *a : chart()->axes(Qt::Vertical))
+        if (auto *val = qobject_cast<QValueAxis*>(a))
+            werteAchseAnpassen(val, pa.height());
 }
 
 void PlotWidget::setDarkMode(bool dark)
@@ -154,12 +174,15 @@ void PlotWidget::render()
     const double xMin = dispX.first(), xMax = qMax(dispX.last(), dispX.first() + 1e-9);
     cat->setRange(xMin, xMax);
     const int ticks = 6;
+    m_xLabels.clear();
     for (int t = 0; t <= ticks; ++t) {
         const double pos = xMin + (xMax - xMin) * t / ticks;
         double realMin = m_duesePts.last().x();
         for (int i = 0; i < dispX.size(); ++i)
             if (dispX[i] >= pos) { realMin = m_duesePts[i].x(); break; }
-        cat->append(QString::number(qRound64(realMin)), pos);
+        const QString label = QString::number(qRound64(realMin));
+        m_xLabels.append({label, pos});
+        cat->append(label, pos);
     }
     chart()->addAxis(cat, Qt::AlignBottom);
     auto *ay = new QValueAxis();
@@ -170,6 +193,7 @@ void PlotWidget::render()
         s->attachAxis(cat);
         s->attachAxis(ay);
     }
+    achsenAnpassen();
 }
 
 void PlotWidget::zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> &kurven,
@@ -202,6 +226,7 @@ void PlotWidget::zeigeVergleich(const QList<QPair<QString, QVector<Messpunkt>>> 
         ay->setTitleText(tr("Temperatur [°C]"));
         ay->setLabelFormat(QStringLiteral("%.0f"));
     }
+    achsenAnpassen();
 }
 
 void PlotWidget::resizeEvent(QResizeEvent *e)

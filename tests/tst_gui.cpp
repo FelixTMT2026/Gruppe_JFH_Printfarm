@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QTabWidget>
 #include <QTableView>
+#include <QSplitter>
 #include <QLineEdit>
 #include <QComboBox>
 #include <QMenuBar>
@@ -19,13 +20,15 @@
 #include "auth.h"
 #include <QLabel>
 #include <QChart>
+#include <QChartView>
+#include <QCategoryAxis>
 #include <QPushButton>
 #include <QValueAxis>
 #include <QLocale>
 #include <QStyledItemDelegate>
 #include <QLineSeries>
 #include <QCheckBox>
-#include <QCategoryAxis>
+#include <QDateTimeAxis>
 
 class TestGui : public QObject {
     Q_OBJECT
@@ -41,9 +44,12 @@ private slots:
     // --- QA-Runde 2 ---
     void spracheWechseltTabTexte();
     void materialTabStatistikGefuellt();
+    void materialListeSortierbar();      // Klick auf Spaltentitel sortiert auf/absteigend
     void fehlerlogHatEintraege();
     void teileInitialSortiertUndAusgewaehlt();   // vor dem Filter-Test, da der die Sortierung zurücksetzt
     void teileFilterAusstehend();
+    void teileSplitterVerschiebbar();   // Plot/Jobliste-Grenze per QSplitter verstellbar
+    void vollbildPerFTaste();           // "f" ausserhalb von Textfeldern schaltet Vollbild um
     void ganttLaesstSichZeichnen();
     void themeFarbenBeiderModi();
     void tabBleibtNachUiNeuaufbauErhalten();
@@ -93,6 +99,10 @@ void TestGui::datenSofortSichtbar()
     QVERIFY(view);
     auto *model = view->model();
     QCOMPARE(model->rowCount(), 80);   // alle 80 Drucker sofort sichtbar
+    // Zebra-Muster: alle Listen in allen Tabs haben wechselnde Zeilenfarben aktiv
+    for (int t = 0; t < tabs->count(); ++t)
+        for (auto *v : tabs->widget(t)->findChildren<QTableView*>())
+            QVERIFY2(v->alternatingRowColors(), "alternatingRowColors fehlt in einem Tab");
 }
 
 void TestGui::filterFunktioniert()
@@ -240,17 +250,68 @@ void TestGui::materialTabStatistikGefuellt()
     const auto labels = tab2->findChildren<QLabel*>();
     bool statsGefuellt = false;
     for (auto *l : labels)
-        if (l->text().contains(QString::fromUtf8("Statistiken")) && l->text().length() > 50)
+        if (l->text().contains(QString::fromUtf8("Verbrauchsstatistik")) && l->text().length() > 50)
             statsGefuellt = true;
     QVERIFY(statsGefuellt);
-    // Material-Tabelle gefüllt (10 Materialien, 7 Spalten im MaterialModel)
+    // genau eine Liste: Materialien (Druckermodelle und Wartungen entfernt)
     const auto views = tab2->findChildren<QTableView*>();
-    QVERIFY(!views.isEmpty());
+    QCOMPARE(views.size(), 1);
+    // Material-Tabelle gefüllt (10 Materialien, 8 Spalten inkl. Ø Wochenverbrauch)
     bool materialTabelleGefuellt = false;
     for (auto *v : views)
-        if (v->model()->columnCount() == 7 && v->model()->rowCount() == 10)
+        if (v->model()->columnCount() == 8 && v->model()->rowCount() == 10)
             materialTabelleGefuellt = true;
     QVERIFY(materialTabelleGefuellt);
+    // Verbrauchs-Plot als Kurve mit Punkten vorhanden und gefuellt (ein Punkt pro Tag)
+    auto *chartView = tab2->findChild<QChartView*>();
+    QVERIFY(chartView);
+    QVERIFY(!chartView->chart()->series().isEmpty());
+    auto *lineSeries = qobject_cast<QLineSeries*>(chartView->chart()->series().first());
+    QVERIFY(lineSeries);
+    QVERIFY(lineSeries->pointsVisible());   // Punkte bleiben auch beim Komprimieren sichtbar
+    QVERIFY(lineSeries->count() > 50);      // 6h-Buckets (28 Tage * 4 = 112), nicht pro Druck (1577)
+    // Y-Achse muss an die Daten angepasst sein (sonst Balkenhoehe 0)
+    auto *axisY = qobject_cast<QValueAxis*>(chartView->chart()->axes(Qt::Vertical).first());
+    QVERIFY(axisY);
+    QVERIFY(axisY->max() > 0);
+    // Tag-Achse: Datumsachse mit Format "d" (nur Tag), Tick-Anzahl an Plotbreite angepasst
+    w->show();
+    w->resize(1200, 900);
+    tabs->setCurrentIndex(2);   // Tab sichtbar, damit der Plot ein echtes Layout bekommt
+    QTest::qWait(150);
+    auto *axisX = qobject_cast<QDateTimeAxis*>(chartView->chart()->axes(Qt::Horizontal).first());
+    QVERIFY(axisX);
+    QCOMPARE(axisX->format(), QStringLiteral("d"));   // nur Tageszahl, kein Monat
+    QVERIFY(axisX->tickCount() > 1);
+    QVERIFY(axisX->labelsFont().pointSize() <= 10);
+    // Plot hoch genug, sonst kollabieren die Achsenlabels zu "..."
+    QVERIFY(chartView->minimumHeight() >= 240);
+}
+
+void TestGui::materialListeSortierbar()
+{
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab2 = tabs->widget(2);
+    auto *view = tab2->findChild<QTableView*>();
+    QVERIFY(view);
+    QVERIFY(view->isSortingEnabled());   // Header-Klick sortiert
+    auto *model = view->model();
+    QVERIFY(model->rowCount() == 10);
+    // Spalte 1 (Bezeichnung) aufsteigend sortieren
+    model->sort(1, Qt::AscendingOrder);
+    const QString first = model->data(model->index(0, 1)).toString();
+    const QString last = model->data(model->index(model->rowCount() - 1, 1)).toString();
+    QVERIFY(first <= last);
+    // absteigend -> umgekehrt
+    model->sort(1, Qt::DescendingOrder);
+    QCOMPARE(model->data(model->index(0, 1)).toString(), last);
+    QCOMPARE(model->data(model->index(model->rowCount() - 1, 1)).toString(), first);
+    // numerische Spalte (Ø Wochenverbrauch, Spalte 7) absteigend: groesster Wert zuerst
+    model->sort(7, Qt::DescendingOrder);
+    const double top = model->data(model->index(0, 7)).toDouble();
+    const double bottom = model->data(model->index(model->rowCount() - 1, 7)).toDouble();
+    QVERIFY(top >= bottom);
+    model->sort(0, Qt::AscendingOrder);   // zurueck auf ID
 }
 
 void TestGui::fehlerlogHatEintraege()
@@ -281,6 +342,66 @@ void TestGui::teileFilterAusstehend()
     QVERIFY(model->rowCount() < gesamt);
     erg->setCurrentIndex(0);
     QCOMPARE(model->rowCount(), gesamt);
+}
+
+void TestGui::teileSplitterVerschiebbar()
+{
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *tab1 = tabs->widget(1);
+    // vertikaler Splitter zwischen Plot-Bereich und Jobliste vorhanden
+    QSplitter *splitter = nullptr;
+    for (auto *s : tab1->findChildren<QSplitter*>())
+        if (s->orientation() == Qt::Vertical) splitter = s;
+    QVERIFY(splitter);
+    QCOMPARE(splitter->count(), 2);   // oben Plot-Box, unten Jobliste
+    // Grenze verschiebbar: neue Groessen annehmen und aendern sich
+    w->show();
+    w->resize(1000, 800);
+    tabs->setCurrentIndex(1);   // Tab aktivieren, damit er eine echte Groesse bekommt
+    QTest::qWait(50);
+    const int gesamt = splitter->height();
+    QVERIFY(gesamt > 100);
+    const QList<int> vorher = splitter->sizes();
+    // Grenze nach unten verschieben: unterer Teil (Jobliste) waechst, oberer schrumpft
+    splitter->setSizes({gesamt / 4, gesamt - gesamt / 4});
+    const QList<int> nachher = splitter->sizes();
+    QVERIFY(nachher.at(1) > vorher.at(1));    // Jobliste groesser geworden
+    QVERIFY(nachher.at(0) < vorher.at(0));    // Plot-Bereich kleiner geworden
+    QVERIFY(!splitter->childrenCollapsible());
+}
+
+void TestGui::vollbildPerFTaste()
+{
+    QVERIFY(!w->isMaximized());
+    QVERIFY(!w->isFullScreen());   // windowed fullscreen: nie rahmenlos
+    auto *tabs = w->findChild<QTabWidget*>();
+    auto *suche = tabs->widget(0)->findChild<QLineEdit*>();
+    QVERIFY(suche);
+    // im Suchfeld tippt "f" nur Text, kein Vollbild
+    suche->setFocus();
+    QTest::keyClick(suche, Qt::Key_F);
+    QVERIFY(!w->isMaximized());
+    QCOMPARE(suche->text(), QStringLiteral("f"));
+    suche->clear();
+    // ausserhalb des Suchfelds: F toggelt windowed-Vollbild (maximiert, Titelleiste bleibt)
+    w->setFocus();
+    QTest::keyClick(w, Qt::Key_F);
+    QVERIFY(w->isMaximized());
+    QVERIFY(!w->isFullScreen());
+    QTest::keyClick(w, Qt::Key_F);
+    QVERIFY(!w->isMaximized());
+    // Menue-Eintrag vorhanden und checkable
+    QAction *fs = nullptr;
+    for (auto *m : w->menuBar()->actions())
+        for (auto *a : m->menu()->actions())
+            if (a->text().contains(QStringLiteral("Vollbild"))) fs = a;
+    QVERIFY(fs);
+    QVERIFY(fs->isCheckable());
+    fs->trigger();
+    QVERIFY(w->isMaximized());
+    QVERIFY(!w->isFullScreen());
+    fs->trigger();
+    QVERIFY(!w->isMaximized());
 }
 
 void TestGui::ganttLaesstSichZeichnen()
@@ -649,18 +770,18 @@ void TestGui::adaptivToggleAchse()
     };
     auto *box = plot.findChild<QCheckBox*>();
     QVERIFY(box);
-    QVERIFY(box->isChecked());            // default: adaptiv an
+    QVERIFY(!box->isChecked());           // default: adaptiv AUS (lineare Zeit)
     QCOMPARE(count(), 2000);              // ALLE Punkte bleiben (kein Downsampling)
-    const double spanAdaptiv = span();
-    box->setChecked(false);               // Standard: lineare Zeitachse
-    QTest::qWait(20);
-    QCOMPARE(count(), 2000);              // weiterhin alle Punkte
     const double spanStandard = span();
     QCOMPARE(spanStandard, 1999.0 / 60.0);          // linear: reale Zeitspanne in min
-    QVERIFY(spanAdaptiv > spanStandard);            // adaptiv: Achse gestreckt
-    box->setChecked(true);
+    box->setChecked(true);                // adaptiv einschalten
     QTest::qWait(20);
-    QCOMPARE(span(), spanAdaptiv);
+    QCOMPARE(count(), 2000);              // weiterhin alle Punkte
+    const double spanAdaptiv = span();
+    QVERIFY(spanAdaptiv > spanStandard);            // adaptiv: Achse gestreckt
+    box->setChecked(false);
+    QTest::qWait(20);
+    QCOMPARE(span(), spanStandard);
 }
 
 QTEST_MAIN(TestGui)

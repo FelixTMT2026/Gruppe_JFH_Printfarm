@@ -18,11 +18,14 @@
 #include <QStyleFactory>
 #include <QPalette>
 #include <QFrame>
+#include <QChart>
+#include <QChartView>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QSettings>
 #include <QGuiApplication>
 #include <QScreen>
+#include <QKeyEvent>
 #include <QStyleHints>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
@@ -123,6 +126,9 @@ void MainWindow::menuesErzeugen()
     m_themeAction->setCheckable(true);
     m_themeAction->setChecked(m_dark);
     connect(m_themeAction, &QAction::triggered, this, &MainWindow::themeUmschalten);
+    m_fsAction = ansicht->addAction(tr("Vollbild (F)"));
+    m_fsAction->setCheckable(true);
+    connect(m_fsAction, &QAction::triggered, this, [this]() { toggleVollbild(); });
     m_langAction = ansicht->addAction(m_english ? tr("Zu Deutsch wechseln") : tr("Switch to English"));
     connect(m_langAction, &QAction::triggered, this, &MainWindow::spracheUmschalten);
 
@@ -318,16 +324,39 @@ void MainWindow::applyTheme()
     }
     qApp->setPalette(pal);
 
-    // bestehende Diagramme sofort mit umschalten
-    const auto plots = findChildren<PlotWidget*>();
-    for (auto *p : plots)
-        p->setDarkMode(m_dark);
+    // bestehende Diagramme sofort mit umschalten (alle QChartViews, inkl. PlotWidget und Statistik-Plot)
+    const auto charts = findChildren<QChartView*>();
+    for (auto *c : charts)
+        c->chart()->setTheme(m_dark ? QChart::ChartThemeDark : QChart::ChartThemeLight);
 }
 
 void MainWindow::themeUmschalten()
 {
     m_dark = m_themeAction->isChecked();
     applyTheme();
+}
+
+void MainWindow::toggleVollbild()
+{
+    // windowed fullscreen: maximiert, Titelleiste mit Min/Close bleibt sichtbar
+    if (isMaximized())
+        showNormal();
+    else
+        showMaximized();
+    if (m_fsAction)
+        m_fsAction->setChecked(isMaximized());
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *e)
+{
+    // "f" (ohne Modifikator) schaltet ins Vollbild - QLineEdit verbraucht die
+    // Taste im Suchfeld fürs Tippen, dort feuert keyPressEvent nicht.
+    if (e->key() == Qt::Key_F && e->modifiers() == Qt::NoModifier) {
+        toggleVollbild();
+        e->accept();
+        return;
+    }
+    QMainWindow::keyPressEvent(e);
 }
 
 void MainWindow::spracheUmschalten()

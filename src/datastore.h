@@ -47,6 +47,9 @@ public:
     double erfolgsquoteDrucker(const QString &druckerId) const; // 0..1, -1 = keine
     double filamentverbrauchG(const QString &druckerId) const;   // Summe Soll
     double materialkostenEur(const QString &druckerId) const;
+    // durchschnittlicher Verbrauch [kg/Woche] je Material, gerechnet aus den
+    // erfolgreichen Auftraegen ueber die gesamte Zeitspanne der Daten
+    double durchschnWochenverbrauchKg(const QString &materialId) const;
 
 signals:
     void logChanged();

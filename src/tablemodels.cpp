@@ -1,6 +1,7 @@
 #include "tablemodels.h"
 #include "csvio.h"
 #include <QColor>
+#include <QtMath>
 
 // ---------------------------------------------------------------- DruckerModel
 DruckerModel::DruckerModel(const DataStore *store, QObject *parent)
@@ -193,15 +194,24 @@ void AuftragModel::sort(int column, Qt::SortOrder order)
 
 // ---------------------------------------------------------------- MaterialModel
 MaterialModel::MaterialModel(const DataStore *store, QObject *parent)
-    : QAbstractTableModel(parent), m_store(store) {}
-int MaterialModel::rowCount(const QModelIndex &) const { return m_store->materialien().size(); }
+    : QAbstractTableModel(parent), m_store(store) { rebuild(); }
+
+void MaterialModel::rebuild()
+{
+    beginResetModel();
+    m_rows.clear();
+    for (const auto &m : m_store->materialien())
+        m_rows.append(&m);
+    endResetModel();
+}
+
+int MaterialModel::rowCount(const QModelIndex &) const { return m_rows.size(); }
 int MaterialModel::columnCount(const QModelIndex &) const { return ColCount; }
 QVariant MaterialModel::data(const QModelIndex &i, int role) const
 {
     if (role != Qt::DisplayRole) return {};
-    const auto &list = m_store->materialien();
-    if (i.row() < 0 || i.row() >= list.size()) return {};
-    const Material &m = list[i.row()];
+    if (i.row() < 0 || i.row() >= m_rows.size()) return {};
+    const Material &m = *m_rows[i.row()];
     switch (i.column()) {
     case ColId: return m.materialId;
     case ColBez: return m.bezeichnung;
@@ -210,6 +220,8 @@ QVariant MaterialModel::data(const QModelIndex &i, int role) const
     case ColDichte: return qRound64(m.dichteGCm3);   // nur Integer anzeigen
     case ColPreis: return qRound64(m.preisEurKg);
     case ColLuefter: return qRound64(m.luefterProzent);
+    case ColWochenverbrauch:   // Ø kg/Woche aus den Auftragsdaten, 2 Nachkommastellen
+        return qRound(m_store->durchschnWochenverbrauchKg(m.materialId) * 100.0) / 100.0;
     }
     return {};
 }
@@ -224,8 +236,36 @@ QVariant MaterialModel::headerData(int s, Qt::Orientation o, int role) const
     case ColDichte: return tr("Dichte [g/cm³]");
     case ColPreis: return tr("Preis [€/kg]");
     case ColLuefter: return tr("Lüfter [%]");
+    case ColWochenverbrauch: return tr("Ø Verbrauch/Woche [kg]");
     }
     return {};
+}
+
+void MaterialModel::sort(int column, Qt::SortOrder order)
+{
+    beginResetModel();
+    // strikte schwache Ordnung (cmp == 0 -> false), siehe DruckerModel::sort
+    std::sort(m_rows.begin(), m_rows.end(), [this, column, order](const Material *a, const Material *b) {
+        int cmp = 0;
+        switch (column) {
+        case ColId: cmp = a->materialId.compare(b->materialId); break;
+        case ColBez: cmp = a->bezeichnung.compare(b->bezeichnung); break;
+        case ColDuese: cmp = (a->dueseTempC < b->dueseTempC) ? -1 : (a->dueseTempC > b->dueseTempC) ? 1 : 0; break;
+        case ColBett: cmp = (a->bettTempC < b->bettTempC) ? -1 : (a->bettTempC > b->bettTempC) ? 1 : 0; break;
+        case ColDichte: cmp = (a->dichteGCm3 < b->dichteGCm3) ? -1 : (a->dichteGCm3 > b->dichteGCm3) ? 1 : 0; break;
+        case ColPreis: cmp = (a->preisEurKg < b->preisEurKg) ? -1 : (a->preisEurKg > b->preisEurKg) ? 1 : 0; break;
+        case ColLuefter: cmp = (a->luefterProzent < b->luefterProzent) ? -1 : (a->luefterProzent > b->luefterProzent) ? 1 : 0; break;
+        case ColWochenverbrauch: {
+            const double wa = m_store->durchschnWochenverbrauchKg(a->materialId);
+            const double wb = m_store->durchschnWochenverbrauchKg(b->materialId);
+            cmp = (wa < wb) ? -1 : (wa > wb) ? 1 : 0;
+            break;
+        }
+        default: cmp = a->materialId.compare(b->materialId);
+        }
+        return order == Qt::AscendingOrder ? cmp < 0 : cmp > 0;
+    });
+    endResetModel();
 }
 
 // ---------------------------------------------------------------- ModellModel

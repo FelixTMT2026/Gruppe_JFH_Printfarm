@@ -51,16 +51,19 @@ private:
 class MaterialModel : public QAbstractTableModel {
     Q_OBJECT
 public:
-    enum { ColId = 0, ColBez, ColDuese, ColBett, ColDichte, ColPreis, ColLuefter, ColCount };
+    enum { ColId = 0, ColBez, ColDuese, ColBett, ColDichte, ColPreis, ColLuefter, ColWochenverbrauch, ColCount };
     explicit MaterialModel(const DataStore *store, QObject *parent = nullptr);
     int rowCount(const QModelIndex &p = {}) const override;
     int columnCount(const QModelIndex &p = {}) const override;
     QVariant data(const QModelIndex &i, int role) const override;
     QVariant headerData(int s, Qt::Orientation o, int role) const override;
+    void sort(int column, Qt::SortOrder order) override;
 public slots:
-    void refresh() { beginResetModel(); endResetModel(); }
+    void refresh() { rebuild(); }
 private:
+    void rebuild();
     const DataStore *m_store;
+    QList<const Material*> m_rows;
 };
 
 class ModellModel : public QAbstractTableModel {

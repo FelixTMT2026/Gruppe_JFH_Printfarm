@@ -54,6 +54,7 @@ DruckerWidget::DruckerWidget(DataStore *store, ProtocolLoader *loader, QWidget *
     m_model = new DruckerModel(store, this);
     connect(store, &DataStore::datenGeladen, m_model, &DruckerModel::refresh);
     m_view = new QTableView(this);
+    m_view->setAlternatingRowColors(true);   // Zebra-Muster (Farben via Stylesheet)
     m_view->setModel(m_model);
     m_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_view->setSelectionBehavior(QAbstractItemView::SelectRows);

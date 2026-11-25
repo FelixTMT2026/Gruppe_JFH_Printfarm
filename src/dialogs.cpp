@@ -72,6 +72,7 @@ DruckerDetailDialog::DruckerDetailDialog(const Drucker &d, const DataStore *stor
     m_model = new AuftragModel(store, this);
     m_model->setNurDrucker(d.druckerId);
     m_auftraegeView = new QTableView(this);
+    m_auftraegeView->setAlternatingRowColors(true);   // Zebra-Muster (Farben via Stylesheet)
     m_auftraegeView->setModel(m_model);
     m_auftraegeView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_auftraegeView->setSelectionBehavior(QAbstractItemView::SelectRows);

@@ -57,18 +57,25 @@ TeileWidget::TeileWidget(DataStore *store, ProtocolLoader *loader, QWidget *pare
     dl->addWidget(m_info);
     dl->addWidget(m_plot, 1);
     dl->addWidget(m_kosten);
-    layout->addWidget(detailBox, 3);
 
-    // darunter: Jobliste
+    // darunter: Jobliste, Grenze zwischen Plot und Jobliste per Drag verschiebbar
     m_model = new AuftragModel(store, this);
     connect(store, &DataStore::datenGeladen, m_model, &AuftragModel::refresh);
     connect(store, &DataStore::datenGeladen, this, &TeileWidget::initialAuswahl);
     m_view = new QTableView(this);
+    m_view->setAlternatingRowColors(true);   // Zebra-Muster (Farben via Stylesheet)
     m_view->setModel(m_model);
     m_view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_view->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    auto *splitter = new QSplitter(Qt::Vertical, this);
+    splitter->addWidget(detailBox);
+    splitter->addWidget(m_view);
+    splitter->setStretchFactor(0, 3);   // Startverteilung wie bisher (3:2)
+    splitter->setStretchFactor(1, 2);
+    splitter->setChildrenCollapsible(false);   // Plot/Jobliste nicht komplett einklappen
+    layout->addWidget(splitter);
     m_view->setSortingEnabled(true);
-    layout->addWidget(m_view, 2);
 
     connect(m_suche, &QLineEdit::textChanged, this, [this]() {
         m_model->setFilter(m_suche->text(), m_ergebnisFilter->currentData().toString());

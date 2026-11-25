@@ -1,4 +1,4 @@
-# Anforderungsmatrix — Gruppe_JFH_Printfarm
+# Anforderungsmatrix zu PrintFarm_Gruppe_03
 
 Umsetzungsstand gegen Aufgabenstellung (PDF) und Prompt.txt.
 
